@@ -1,0 +1,7 @@
+.netlify/
+.gemini/
+.agents/
+*.log
+node_modules/
+.DS_Store
+Thumbs.db
