@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1600" width="100%" height="100%">
+  <defs>
+    <radialGradient id="ffGlow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#0284c7" stop-opacity="0.4"/>
+      <stop offset="45%" stop-color="#0369a1" stop-opacity="0.2"/>
+      <stop offset="85%" stop-color="#082f49" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#050507" stop-opacity="1"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="1600" fill="#050507"/>
+  <rect width="1200" height="1600" fill="url(#ffGlow)"/>
+
+  <!-- Iconic Retro Fantastic 4 Emblem Geometry -->
+  <circle cx="600" cy="550" r="320" fill="none" stroke="#38bdf8" stroke-width="4" opacity="0.6"/>
+  <circle cx="600" cy="550" r="380" fill="none" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="6,12" opacity="0.4"/>
+
+  <!-- The "4" Geometry -->
+  <path d="M 640 360 L 640 740 M 640 620 L 510 620 L 640 360" fill="none" stroke="#fff" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Void Bottom Fade -->
+  <rect y="1100" width="1200" height="500" fill="#050507"/>
+</svg>

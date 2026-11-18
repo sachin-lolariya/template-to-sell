@@ -3,383 +3,292 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DOOMSDAY: Multiverse Countdown & Incursion Watch</title>
-  <meta name="description" content="Live real-time countdown to Marvel Studios' Avengers: Doomsday (Dec 18, 2026). Interactive multiversal roster, Latverian command console, and Secret Wars battle tracker.">
+  <title>AVENGERS: DOOMSDAY // CINEMA REEL & COUNTDOWN</title>
+  <meta name="description" content="Cinematic vertical reel and real-time countdown to Marvel Studios' Avengers: Doomsday (Dec 18, 2026). Directed by the Russo Brothers, starring Robert Downey Jr. as Doctor Doom.">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   
-  <!-- CSS Stylesheets -->
+  <!-- Master Cinema Reel Stylesheet -->
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/animations.css">
 
-  <!-- GSAP 3 & Plugins (CDN) -->
+  <!-- GreenSock GSAP 3 -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 </head>
 <body>
-  <!-- Ambient Aurora Canvas Background -->
-  <canvas id="ambient-canvas"></canvas>
 
-  <!-- Navigation -->
-  <nav class="site-nav">
-    <div class="container">
-      <a href="#hero" class="brand-logo">
-        <img src="assets/doom-crest.svg" alt="Doctor Doom Crest" class="brand-icon">
-        <span class="brand-text">DOOMSDAY<span>WATCH</span></span>
-      </a>
-
-      <ul class="nav-links">
-        <li><a href="#countdown" class="active">Countdown</a></li>
-        <li><a href="#roster">Multiverse Roster</a></li>
-        <li><a href="#terminal">TVA Terminal</a></li>
-        <li><a href="#reel">Milestones</a></li>
-        <li><a href="#generator">Badge Creator</a></li>
-        <li><a href="#faq">Intel FAQ</a></li>
-      </ul>
-
-      <div class="nav-actions">
-        <button id="sound-toggle" class="sound-btn" title="Toggle Cinematic Ambient Audio">
-          <span>🔈</span> Sound: OFF
-        </button>
+  <!-- Top Editorial Header -->
+  <header class="cinema-header">
+    <div class="brand-wrapper">
+      <div class="brand-logo-text">DOOMSDAY // PHASE VI</div>
+      <div class="brand-badge">
+        <span class="beacon-dot"></span>
+        <span>INCURSION WATCH</span>
       </div>
     </div>
-  </nav>
 
-  <!-- Hero Section -->
-  <header id="hero" class="hero-section">
-    <div class="container">
-      <div class="badge-incursion">
-        <span class="pulse-dot"></span> Incursion Threat Level: Multiversal Crisis
+    <div class="header-center">
+      <div class="utc-clock">
+        TIME: <span id="utc-clock-time">05:00:00 UTC</span>
       </div>
+      <div>COLLISION STATUS: <span style="color: #ef4444;">CRITICAL</span></div>
+    </div>
 
-      <h1 class="hero-title">Avengers: Doomsday</h1>
-      <p class="hero-subtitle">
-        Victor von Doom prepares to reshape reality. Track the exact live countdown to 
-        <span class="target-badge">December 18, 2026</span> in theaters worldwide.
-      </p>
-
-      <!-- Countdown Wrapper (Cipher & Pulse Style) -->
-      <div id="countdown" class="countdown-wrapper doom-pulse-glow">
-        <div class="countdown-grid">
-          <div class="clock-cell">
-            <div id="count-days" class="clock-number">--</div>
-            <div class="clock-label">Days</div>
-          </div>
-          <div class="clock-cell">
-            <div id="count-hours" class="clock-number">--</div>
-            <div class="clock-label">Hours</div>
-          </div>
-          <div class="clock-cell">
-            <div id="count-mins" class="clock-number">--</div>
-            <div class="clock-label">Minutes</div>
-          </div>
-          <div class="clock-cell">
-            <div id="count-secs" class="clock-number">--</div>
-            <div class="clock-label">Seconds</div>
-          </div>
-        </div>
-
-        <!-- Secondary Milestones -->
-        <div class="secondary-milestones">
-          <div class="milestone-chip">
-            <span>Next Horizon:</span>
-            <strong>Avengers: Secret Wars</strong>
-            <span id="sw-days">Dec 17, 2027</span>
-          </div>
-          <div class="milestone-chip">
-            <span>Directing:</span>
-            <strong>Anthony & Joe Russo</strong>
-          </div>
-          <div class="milestone-chip">
-            <span>Doctor Doom:</span>
-            <strong>Robert Downey Jr.</strong>
-          </div>
-        </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="hero-cta">
-        <a href="#roster" class="btn btn-primary">
-          <span>⚡ Explore Multiverse Roster</span>
-        </a>
-        <a href="#terminal" class="btn btn-secondary">
-          <span>📟 Access Latverian Terminal</span>
-        </a>
-      </div>
+    <div class="header-actions">
+      <button id="audio-toggle" class="audio-btn" title="Toggle 432Hz Ambient Sound">SOUND: OFF</button>
+      <button id="dossier-toggle" class="dossier-toggle-btn">EXPLORE DOSSIER</button>
     </div>
   </header>
 
-  <!-- Multiverse Roster (Modulify Cardwall inspired) -->
-  <section id="roster" class="roster-section">
-    <div class="container">
-      <div class="section-head">
-        <div class="section-tag">Multiverse Defense Registry</div>
-        <h2 class="section-title">Champions vs. The Monarch</h2>
-        <div class="roster-filter">
-          <button class="filter-btn active" data-filter="all">All Intelligence</button>
-          <button class="filter-btn" data-filter="doom">Latverian Order</button>
-          <button class="filter-btn" data-filter="champions">Earth's Defenders</button>
-          <button class="filter-btn" data-filter="multiverse">Multiverse Nexus</button>
-        </div>
-      </div>
+  <!-- Cinema Reel Viewport -->
+  <main class="reel-viewport">
+    <div class="reel-strip">
 
-      <!-- Cardwall Grid -->
-      <div id="roster-grid" class="roster-grid">
-        <!-- Rendered dynamically by js/main.js -->
-      </div>
+      <!-- SLIDE 01: AVENGERS: DOOMSDAY (MASTER COUNTDOWN) -->
+      <section class="reel-slide active" data-index="0">
+        <div class="slide-artwork">
+          <img src="assets/poster-doomsday.svg" alt="Avengers: Doomsday Poster Artwork">
+          <div class="slide-scrim"></div>
+        </div>
+
+        <div class="slide-content">
+          <div class="slide-meta-row">
+            <span class="slide-index-tag">[ 01 / 04 ]</span>
+            <span class="slide-date-tag">Theatrical Premiere · December 18, 2026</span>
+          </div>
+
+          <h1 class="slide-title">Avengers: Doomsday</h1>
+          <p class="slide-tagline">"A Monarch Rises to Unify a Collapsing Multiverse."</p>
+
+          <!-- Live Real-Time Countdown HUD -->
+          <div class="countdown-hud">
+            <div class="hud-header">
+              <span>Universal Standard Countdown</span>
+              <span>Sync: UTC</span>
+            </div>
+            <div class="hud-digits-row">
+              <div class="hud-block">
+                <div id="hud-days" class="hud-num">--</div>
+                <div class="hud-lbl">Days</div>
+              </div>
+              <div class="hud-sep">:</div>
+              <div class="hud-block">
+                <div id="hud-hours" class="hud-num">--</div>
+                <div class="hud-lbl">Hours</div>
+              </div>
+              <div class="hud-sep">:</div>
+              <div class="hud-block">
+                <div id="hud-mins" class="hud-num">--</div>
+                <div class="hud-lbl">Mins</div>
+              </div>
+              <div class="hud-sep">:</div>
+              <div class="hud-block">
+                <div id="hud-secs" class="hud-num">--</div>
+                <div class="hud-lbl">Secs</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="credits-grid">
+            <div class="credit-item">
+              <span class="credit-label">Directed By</span>
+              <span class="credit-val">Anthony &amp; Joe Russo</span>
+            </div>
+            <div class="credit-item">
+              <span class="credit-label">Victor von Doom</span>
+              <span class="credit-val">Robert Downey Jr.</span>
+            </div>
+          </div>
+
+          <div class="slide-buttons">
+            <button class="btn-cinema btn-cinema-primary btn-explore">View Film Dossier</button>
+            <button class="btn-cinema btn-cinema-ghost btn-explore">Cast &amp; Lore Matrix</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 02: THE FANTASTIC FOUR: FIRST STEPS -->
+      <section class="reel-slide" data-index="1">
+        <div class="slide-artwork">
+          <img src="assets/poster-fantasticfour.svg" alt="The Fantastic Four: First Steps Poster">
+          <div class="slide-scrim"></div>
+        </div>
+
+        <div class="slide-content">
+          <div class="slide-meta-row">
+            <span class="slide-index-tag">[ 02 / 04 ]</span>
+            <span class="slide-date-tag">Phase 6 Prologue · July 25, 2025</span>
+          </div>
+
+          <h2 class="slide-title">The Fantastic Four</h2>
+          <p class="slide-tagline">"Marvel's First Family Emerges from the Retro-Cosmic Timeline."</p>
+
+          <div class="credits-grid">
+            <div class="credit-item">
+              <span class="credit-label">Directed By</span>
+              <span class="credit-val">Matt Shakman</span>
+            </div>
+            <div class="credit-item">
+              <span class="credit-label">Reed Richards</span>
+              <span class="credit-val">Pedro Pascal</span>
+            </div>
+          </div>
+
+          <div class="slide-buttons">
+            <button class="btn-cinema btn-cinema-primary btn-explore">Explore Prelude Dossier</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 03: AVENGERS: SECRET WARS -->
+      <section class="reel-slide" data-index="2">
+        <div class="slide-artwork">
+          <img src="assets/poster-secretwars.svg" alt="Avengers: Secret Wars Poster">
+          <div class="slide-scrim"></div>
+        </div>
+
+        <div class="slide-content">
+          <div class="slide-meta-row">
+            <span class="slide-index-tag">[ 03 / 04 ]</span>
+            <span class="slide-date-tag">Multiverse Saga Climax · December 17, 2027</span>
+          </div>
+
+          <h2 class="slide-title">Avengers: Secret Wars</h2>
+          <p class="slide-tagline">"In the Ashes of the Incursions, Battleworld Reigns."</p>
+
+          <div class="credits-grid">
+            <div class="credit-item">
+              <span class="credit-label">Screenplay By</span>
+              <span class="credit-val">Michael Waldron</span>
+            </div>
+            <div class="credit-item">
+              <span class="credit-label">Event Scope</span>
+              <span class="credit-val">Total Multiverse Unification</span>
+            </div>
+          </div>
+
+          <div class="slide-buttons">
+            <button class="btn-cinema btn-cinema-primary btn-explore">Battleworld Briefing</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 04: MARVEL STUDIOS' X-MEN -->
+      <section class="reel-slide" data-index="3">
+        <div class="slide-artwork">
+          <img src="assets/poster-xmen.svg" alt="Marvel Studios' X-Men Poster">
+          <div class="slide-scrim"></div>
+        </div>
+
+        <div class="slide-content">
+          <div class="slide-meta-row">
+            <span class="slide-index-tag">[ 04 / 04 ]</span>
+            <span class="slide-date-tag">The Mutant Awakening · May 05, 2028</span>
+          </div>
+
+          <h2 class="slide-title">Marvel's X-Men</h2>
+          <p class="slide-tagline">"The Next Mutation Crosses the Incursion Threshold."</p>
+
+          <div class="credits-grid">
+            <div class="credit-item">
+              <span class="credit-label">Production</span>
+              <span class="credit-val">Marvel Studios</span>
+            </div>
+            <div class="credit-item">
+              <span class="credit-label">Status</span>
+              <span class="credit-val">Confirmed Theatrical Release</span>
+            </div>
+          </div>
+
+          <div class="slide-buttons">
+            <button class="btn-cinema btn-cinema-primary btn-explore">Mutant Timeline Registry</button>
+          </div>
+        </div>
+      </section>
+
     </div>
-  </section>
+  </main>
 
-  <!-- Interactive Dossier Modal -->
-  <div id="dossier-modal" class="dossier-modal">
-    <div class="dossier-content">
-      <button id="close-modal" class="close-modal-btn">&times;</button>
-      <div id="modal-status" class="card-status-badge">Status</div>
-      <h3 id="modal-name" class="card-name" style="font-size: 2rem; margin-top: 0.5rem;">Character Name</h3>
-      <p id="modal-actor" class="card-actor" style="font-size: 1rem; margin-bottom: 1.25rem;">Actor</p>
-      <p id="modal-desc" class="card-desc" style="color: var(--text-main); font-size: 1.05rem; margin-bottom: 1rem;">Description</p>
-      <div id="modal-details" style="background: var(--bg-surface-2); padding: 1rem; border-radius: var(--radius-sm); border-left: 3px solid var(--doom-primary); font-size: 0.9rem; color: var(--text-muted);">
-        Detailed intel...
-      </div>
+  <!-- Bottom Navigation & Scrub Bar -->
+  <footer class="cinema-footer">
+    <div class="footer-indexer">
+      <span class="current-index">01</span> / 04
     </div>
-  </div>
 
-  <!-- Latverian / TVA Command Console (Modulify Console inspired) -->
-  <section id="terminal" class="terminal-section">
-    <div class="container">
-      <div class="section-head">
-        <div class="section-tag">Direct Latveria / TVA Uplink</div>
-        <h2 class="section-title">Encrypted Defense Console</h2>
+    <div class="footer-controls">
+      <button id="reel-prev" class="nav-arrow-btn" title="Previous Film">&#8592;</button>
+      <div class="reel-progress-track">
+        <div class="reel-progress-fill"></div>
       </div>
-
-      <div class="terminal-window crt-screen">
-        <div class="terminal-header">
-          <div class="terminal-controls">
-            <span class="terminal-dot dot-red"></span>
-            <span class="terminal-dot dot-yellow"></span>
-            <span class="terminal-dot dot-green"></span>
-          </div>
-          <div class="terminal-title">TERMINAL // LATVERIA-TVA-UPLINK // NODE: 616</div>
-          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--doom-primary);">ONLINE ●</div>
-        </div>
-
-        <div id="terminal-output" class="terminal-body">
-          <div class="terminal-log">SECURE CONNECTION ESTABLISHED.</div>
-          <div class="terminal-log">INCURSION MONITOR ACTIVE. ALL MULTIVERSAL THREADS LOGGED.</div>
-          <div class="terminal-log" style="color: var(--text-dim);">Type 'help' to review available intelligence protocols.</div>
-        </div>
-
-        <div class="terminal-prompt-line" style="padding: 0 1.5rem 1rem;">
-          <span class="terminal-prompt-sym">></span>
-          <input type="text" id="terminal-input" class="terminal-input" placeholder="Enter protocol command (e.g., 'doom', 'timeline', 'help')..." autocomplete="off" spellcheck="false">
-        </div>
-
-        <div class="terminal-chips">
-          <span class="chip-label">Quick Uplink:</span>
-          <button class="cmd-chip" data-cmd="doom">DOOM</button>
-          <button class="cmd-chip" data-cmd="timeline">TIMELINE</button>
-          <button class="cmd-chip" data-cmd="secretwars">SECRET WARS</button>
-          <button class="cmd-chip" data-cmd="incursion">INCURSION STATUS</button>
-          <button class="cmd-chip" data-cmd="clear">CLEAR</button>
-        </div>
-      </div>
+      <button id="reel-next" class="nav-arrow-btn" title="Next Film">&#8594;</button>
     </div>
-  </section>
 
-  <!-- Cinema Reel - Timeline & Teasers (Modulify Cinema Reel inspired) -->
-  <section id="reel" class="reel-section">
-    <div class="container">
-      <div class="section-head">
-        <div class="section-tag">Cinematic Trajectory</div>
-        <h2 class="section-title">The Road to Doomsday</h2>
-      </div>
-
-      <div class="reel-track">
-        <div class="reel-card">
-          <div class="reel-img-placeholder">🏰</div>
-          <div class="reel-card-body">
-            <div class="reel-date">Phase 6 Prologue</div>
-            <h3 class="reel-title">Rise of Victor von Doom</h3>
-            <p class="reel-desc">
-              Robert Downey Jr. makes his seismic return to the MCU as Victor von Doom, combining intellect and sorcery to avert total multiversal annihilation.
-            </p>
-          </div>
-        </div>
-
-        <div class="reel-card">
-          <div class="reel-img-placeholder">🌀</div>
-          <div class="reel-card-body">
-            <div class="reel-date">Cosmic Incursion</div>
-            <h3 class="reel-title">Colliding Realities</h3>
-            <p class="reel-desc">
-              Universes collide as the boundary between timelines collapses, forcing heroes across alternate branches to unite or perish.
-            </p>
-          </div>
-        </div>
-
-        <div class="reel-card">
-          <div class="reel-img-placeholder">🚀</div>
-          <div class="reel-card-body">
-            <div class="reel-date">July 2025 Prelude</div>
-            <h3 class="reel-title">The Fantastic Four: First Steps</h3>
-            <p class="reel-desc">
-              Marvel's First Family lands from their 1960s-inspired cosmos, laying down the multiversal groundwork that leads directly into Doomsday.
-            </p>
-          </div>
-        </div>
-
-        <div class="reel-card">
-          <div class="reel-img-placeholder">⚔️</div>
-          <div class="reel-card-body">
-            <div class="reel-date">December 17, 2027</div>
-            <h3 class="reel-title">Avengers: Secret Wars</h3>
-            <p class="reel-desc">
-              The climax of the Multiverse Saga. In the ashes of the incursions, Battleworld emerges for the definitive clash of destinies.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Interactive Badge Generator -->
-  <section id="generator" class="generator-section">
-    <div class="container">
-      <div class="generator-card">
-        <div class="section-tag">End Credits Sequence</div>
-        <h2 class="section-title" style="font-size: 2rem;">Custom "Will Return" Creator</h2>
-        <p style="color: var(--text-muted); max-width: 500px; margin: 0.5rem auto 1.5rem;">
-          Enter your superhero moniker to generate your personal Marvel Studios end-credits title card.
-        </p>
-
-        <div class="generator-input-row">
-          <input type="text" id="fan-name-input" class="fan-input" placeholder="Enter your name or alias..." maxlength="24">
-          <button id="copy-badge-btn" class="btn btn-primary">Copy Badge Text</button>
-        </div>
-
-        <div class="badge-preview-screen">
-          <div id="preview-fan-name" class="preview-name">YOU</div>
-          <div class="preview-phrase">WILL RETURN IN AVENGERS: DOOMSDAY</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Intel FAQ Accordion -->
-  <section id="faq" class="faq-section">
-    <div class="container">
-      <div class="section-head">
-        <div class="section-tag">Declassified Briefing</div>
-        <h2 class="section-title">Frequently Asked Questions</h2>
-      </div>
-
-      <div class="faq-list">
-        <div class="faq-item">
-          <button class="faq-question">
-            <span>When does Avengers: Doomsday officially hit theaters?</span>
-            <span class="faq-chevron">▼</span>
-          </button>
-          <div class="faq-answer">
-            <p>
-              Avengers: Doomsday is scheduled for global theatrical release on <strong>December 18, 2026</strong>. The live timer at the top of this portal tracks the exact seconds remaining until launch.
-            </p>
-          </div>
-        </div>
-
-        <div class="faq-item">
-          <button class="faq-question">
-            <span>Who is directing and starring in Avengers: Doomsday?</span>
-            <span class="faq-chevron">▼</span>
-          </button>
-          <div class="faq-answer">
-            <p>
-              The film is directed by acclaimed MCU veterans <strong>Anthony and Joe Russo</strong> (directors of Infinity War and Endgame), with <strong>Robert Downey Jr.</strong> making a landmark return to star as the titular monarch, <strong>Victor von Doom / Doctor Doom</strong>.
-            </p>
-          </div>
-        </div>
-
-        <div class="faq-item">
-          <button class="faq-question">
-            <span>What is the difference between Doomsday and Secret Wars?</span>
-            <span class="faq-chevron">▼</span>
-          </button>
-          <div class="faq-answer">
-            <p>
-              <strong>Avengers: Doomsday (Dec 18, 2026)</strong> centers on the escalating multiversal incursion catastrophe and the ascension of Doctor Doom. <strong>Avengers: Secret Wars (Dec 17, 2027)</strong> is the grand finale of the Multiverse Saga, bringing together heroes across alternate realities onto Battleworld.
-            </p>
-          </div>
-        </div>
-
-        <div class="faq-item">
-          <button class="faq-question">
-            <span>What are Incursions in the Marvel Cinematic Universe?</span>
-            <span class="faq-chevron">▼</span>
-          </button>
-          <div class="faq-answer">
-            <p>
-              An incursion occurs when two alternate realities drift and collide at their central nexus points, inevitably threatening the mutual destruction of both universes unless one or both are stabilized.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Incursion Alerts Form -->
-      <div class="alerts-card">
-        <h3 class="alerts-title">Join The Incursion Watch</h3>
-        <p class="alerts-sub">
-          Receive priority intelligence alerts when official trailers, cast confirmations, and ticket presales go live.
-        </p>
-
-        <form id="alerts-form" class="alerts-form">
-          <input type="email" id="alert-email" name="email" placeholder="Enter your email address..." required>
-          <button type="submit" class="btn btn-primary">Subscribe</button>
-        </form>
-        <div id="form-feedback" class="form-feedback"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer & Copyright Fair Use Disclaimer -->
-  <footer class="site-footer">
-    <div class="container">
-      <div class="footer-grid">
-        <div>
-          <div class="footer-brand-title">DOOMSDAY WATCH</div>
-          <p>An independent, community-driven multiversal countdown and intelligence hub built for fans of Marvel Studios and comic lore.</p>
-          <div class="disclaimer-box">
-            <strong>Fair Use Notice & Fan Disclaimer:</strong>
-            This is an unofficial, non-profit fan tribute website created strictly for countdown tracking, cultural commentary, and entertainment under the Fair Use doctrine (17 U.S.C. § 107). This site is not associated with, affiliated with, authorized, maintained, sponsored or in any way officially connected with Marvel Studios, The Walt Disney Company, or any of their affiliates. All Marvel Cinematic Universe trademarks and character names belong to their respective owners.
-          </div>
-        </div>
-
-        <div>
-          <div class="footer-nav-title">Intelligence Hub</div>
-          <ul class="footer-nav-list">
-            <li><a href="#countdown">Live Incursion Clock</a></li>
-            <li><a href="#roster">Multiverse Roster</a></li>
-            <li><a href="#terminal">TVA Terminal</a></li>
-            <li><a href="#reel">Phase 6 Milestones</a></li>
-            <li><a href="#generator">Badge Creator</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <div class="footer-nav-title">Phase 6 Horizons</div>
-          <ul class="footer-nav-list">
-            <li><a href="#countdown">The Fantastic Four (2025)</a></li>
-            <li><a href="#countdown">Avengers: Doomsday (2026)</a></li>
-            <li><a href="#countdown">Avengers: Secret Wars (2027)</a></li>
-            <li><a href="#countdown">Marvel Studios' X-Men (2028)</a></li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="footer-bottom">
-        <p>&copy; 2026 Doomsday Watch. Engineered for the Multiverse.</p>
-      </div>
+    <div class="footer-meta-notes">
+      SCROLL / DRAG / KEYS (&#8592; &#8594;) TO NAVIGATE
     </div>
   </footer>
 
-  <!-- Master JavaScript Application -->
+  <!-- Interactive Deep Dossier Drawer (Modal) -->
+  <aside id="dossier-drawer" class="dossier-drawer" aria-hidden="true">
+    <button id="close-drawer" class="close-drawer-btn" title="Close Dossier">&times;</button>
+
+    <div class="drawer-container">
+      <div class="drawer-tag">Declassified Intelligence</div>
+      <h2 class="drawer-title">The Road to Battleworld</h2>
+
+      <div class="drawer-grid">
+        <!-- Cast Matrix -->
+        <div>
+          <h3 class="drawer-section-title">Confirmed Multiversal Frontline</h3>
+          <div class="cast-matrix">
+            <div class="cast-card">
+              <div class="cast-role-badge">The Sovereign Monarch</div>
+              <div class="cast-name">Victor von Doom</div>
+              <div class="cast-actor">Robert Downey Jr.</div>
+            </div>
+            <div class="cast-card">
+              <div class="cast-role-badge">The First Family</div>
+              <div class="cast-name">Reed Richards</div>
+              <div class="cast-actor">Pedro Pascal</div>
+            </div>
+            <div class="cast-card">
+              <div class="cast-role-badge">The Reality Nexus</div>
+              <div class="cast-name">Scarlet Witch</div>
+              <div class="cast-actor">Elizabeth Olsen</div>
+            </div>
+            <div class="cast-card">
+              <div class="cast-role-badge">Earth's Defender</div>
+              <div class="cast-name">Peter Parker</div>
+              <div class="cast-actor">Tom Holland</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom End Credits Badge Generator -->
+        <div class="badge-creator-box">
+          <div class="drawer-tag">Interactive Feature</div>
+          <h3 style="font-family: var(--font-cinema); font-size: 1.5rem; margin-top: 0.25rem;">Marvel End-Credits Title Card Generator</h3>
+          <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem;">Enter your hero alias to forge your personalized MCU end-credit teaser.</p>
+          
+          <div class="badge-input-line">
+            <input type="text" id="fan-name-input" class="badge-input" placeholder="Enter your moniker (e.g. SACHIN)..." maxlength="20">
+            <button id="copy-badge-btn" class="btn-cinema btn-cinema-primary">Copy Badge</button>
+          </div>
+
+          <div class="badge-screen-render">
+            <div id="badge-name-display" class="badge-user-name">YOU</div>
+            <div class="badge-return-text">WILL RETURN IN AVENGERS: DOOMSDAY</div>
+          </div>
+        </div>
+
+        <!-- Legal Fan Notice -->
+        <div class="legal-fan-notice">
+          <strong>Fair Use Notice &amp; Disclaimer:</strong>
+          This portal is an independent fan tribute project built strictly for countdown tracking and cultural commentary under the Fair Use doctrine (17 U.S.C. § 107). It is not affiliated with, endorsed by, or sponsored by Marvel Studios, The Walt Disney Company, or their subsidiaries. All character names and MCU properties remain trademarks of their respective owners.
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Master Cinema Reel Application JS -->
   <script src="js/main.js"></script>
 </body>
 </html>
