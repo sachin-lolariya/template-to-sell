@@ -5,3 +5,12 @@
 node_modules/
 .DS_Store
 Thumbs.db
+
+# Media & Binary exclusions for 100% copyright compliance
+*.mp4
+*.mp3
+*.wav
+*.m4a
+*.mkv
+*.webm
+

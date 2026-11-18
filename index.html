@@ -1,294 +1,259 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AVENGERS: DOOMSDAY // CINEMA REEL & COUNTDOWN</title>
-  <meta name="description" content="Cinematic vertical reel and real-time countdown to Marvel Studios' Avengers: Doomsday (Dec 18, 2026). Directed by the Russo Brothers, starring Robert Downey Jr. as Doctor Doom.">
+  <title>Avengers: Doomsday Countdown // Official Single Banner Experience</title>
+  <meta name="description"
+    content="Official single banner countdown and live video ambient experience for Marvel Studios' Avengers: Doomsday (December 18, 2026).">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-  
-  <!-- Master Cinema Reel Stylesheet -->
+
+  <!-- Master Stylesheet matching AvengersCountdown.com -->
   <link rel="stylesheet" href="css/style.css">
 
   <!-- GreenSock GSAP 3 -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+
+  <!-- YouTube IFrame Player API (Official Stream & 100% Copyright Immune) -->
+  <script src="https://www.youtube.com/iframe_api"></script>
 </head>
+
 <body>
 
-  <!-- Top Editorial Header -->
-  <header class="cinema-header">
-    <div class="brand-wrapper">
-      <div class="brand-logo-text">DOOMSDAY // PHASE VI</div>
-      <div class="brand-badge">
-        <span class="beacon-dot"></span>
-        <span>INCURSION WATCH</span>
-      </div>
+  <!-- Fullscreen 16:9 Official YouTube Video Background -->
+  <div id="bg-video-container" class="video-bg-container">
+    <div class="video-bg-wrapper">
+      <div id="youtube-bg-player"></div>
     </div>
+    <!-- Scrim & Vignette Dark Overlays -->
+    <div class="video-overlay-scrim"></div>
+    <div class="video-noise-overlay"></div>
+  </div>
 
-    <div class="header-center">
-      <div class="utc-clock">
-        TIME: <span id="utc-clock-time">05:00:00 UTC</span>
-      </div>
-      <div>COLLISION STATUS: <span style="color: #ef4444;">CRITICAL</span></div>
-    </div>
+  <!-- Top Navigation Header -->
+  <header class="site-header">
+    <a href="#" class="header-brand">
+      <span class="brand-badge-box">AVC</span>
+      <span class="brand-name">Avengers Countdown</span>
+    </a>
 
-    <div class="header-actions">
-      <button id="audio-toggle" class="audio-btn" title="Toggle 432Hz Ambient Sound">SOUND: OFF</button>
-      <button id="dossier-toggle" class="dossier-toggle-btn">EXPLORE DOSSIER</button>
-    </div>
+    <nav class="header-nav">
+      <a href="#countdown" class="nav-pill active">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+        <span>Countdown</span>
+      </a>
+
+      <a href="#watch-planner" class="nav-pill" id="nav-planner-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="8" y1="6" x2="21" y2="6" />
+          <line x1="8" y1="12" x2="21" y2="12" />
+          <line x1="8" y1="18" x2="21" y2="18" />
+          <line x1="3" y1="6" x2="3.01" y2="6" />
+          <line x1="3" y1="12" x2="3.01" y2="12" />
+          <line x1="3" y1="18" x2="3.01" y2="18" />
+        </svg>
+        <span>Watch planner</span>
+      </a>
+
+      <a href="#news" class="nav-pill" id="nav-news-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
+          <path d="M18 14h-8" />
+          <path d="M15 18h-5" />
+          <path d="M10 6h8v4h-8V6Z" />
+        </svg>
+        <span>News</span>
+      </a>
+
+      <div class="nav-pill" style="cursor: pointer;" id="nav-explore-btn">
+        <span>Explore</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </div>
+
+      <div class="lang-selector">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="2" y1="12" x2="22" y2="12" />
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+        </svg>
+        <span>EN</span>
+      </div>
+    </nav>
   </header>
 
-  <!-- Cinema Reel Viewport -->
-  <main class="reel-viewport">
-    <div class="reel-strip">
+  <!-- Hero Fullscreen Single Banner -->
+  <main class="hero-banner" id="countdown">
+    <div class="hero-content">
 
-      <!-- SLIDE 01: AVENGERS: DOOMSDAY (MASTER COUNTDOWN) -->
-      <section class="reel-slide active" data-index="0">
-        <div class="slide-artwork">
-          <img src="assets/poster-doomsday.svg" alt="Avengers: Doomsday Poster Artwork">
-          <div class="slide-scrim"></div>
+      <!-- Primary Title -->
+      <h1 class="hero-title">AVENGERS: DOOMSDAY COUNTDOWN</h1>
+
+      <!-- 5-Unit Master Countdown Clock (Months : Days : Hours : Min : Sec) -->
+      <div class="countdown-clock">
+        <!-- MONTHS -->
+        <div class="clock-group">
+          <div id="hud-months" class="clock-val">00</div>
+          <div class="clock-lbl">MONTHS</div>
         </div>
 
-        <div class="slide-content">
-          <div class="slide-meta-row">
-            <span class="slide-index-tag">[ 01 / 04 ]</span>
-            <span class="slide-date-tag">Theatrical Premiere · December 18, 2026</span>
-          </div>
+        <div class="clock-divider">:</div>
 
-          <h1 class="slide-title">Avengers: Doomsday</h1>
-          <p class="slide-tagline">"A Monarch Rises to Unify a Collapsing Multiverse."</p>
-
-          <!-- Live Real-Time Countdown HUD -->
-          <div class="countdown-hud">
-            <div class="hud-header">
-              <span>Universal Standard Countdown</span>
-              <span>Sync: UTC</span>
-            </div>
-            <div class="hud-digits-row">
-              <div class="hud-block">
-                <div id="hud-days" class="hud-num">--</div>
-                <div class="hud-lbl">Days</div>
-              </div>
-              <div class="hud-sep">:</div>
-              <div class="hud-block">
-                <div id="hud-hours" class="hud-num">--</div>
-                <div class="hud-lbl">Hours</div>
-              </div>
-              <div class="hud-sep">:</div>
-              <div class="hud-block">
-                <div id="hud-mins" class="hud-num">--</div>
-                <div class="hud-lbl">Mins</div>
-              </div>
-              <div class="hud-sep">:</div>
-              <div class="hud-block">
-                <div id="hud-secs" class="hud-num">--</div>
-                <div class="hud-lbl">Secs</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="credits-grid">
-            <div class="credit-item">
-              <span class="credit-label">Directed By</span>
-              <span class="credit-val">Anthony &amp; Joe Russo</span>
-            </div>
-            <div class="credit-item">
-              <span class="credit-label">Victor von Doom</span>
-              <span class="credit-val">Robert Downey Jr.</span>
-            </div>
-          </div>
-
-          <div class="slide-buttons">
-            <button class="btn-cinema btn-cinema-primary btn-explore">View Film Dossier</button>
-            <button class="btn-cinema btn-cinema-ghost btn-explore">Cast &amp; Lore Matrix</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- SLIDE 02: THE FANTASTIC FOUR: FIRST STEPS -->
-      <section class="reel-slide" data-index="1">
-        <div class="slide-artwork">
-          <img src="assets/poster-fantasticfour.svg" alt="The Fantastic Four: First Steps Poster">
-          <div class="slide-scrim"></div>
+        <!-- DAYS -->
+        <div class="clock-group">
+          <div id="hud-days" class="clock-val">29</div>
+          <div class="clock-lbl">DAYS</div>
         </div>
 
-        <div class="slide-content">
-          <div class="slide-meta-row">
-            <span class="slide-index-tag">[ 02 / 04 ]</span>
-            <span class="slide-date-tag">Phase 6 Prologue · July 25, 2025</span>
-          </div>
+        <div class="clock-divider">:</div>
 
-          <h2 class="slide-title">The Fantastic Four</h2>
-          <p class="slide-tagline">"Marvel's First Family Emerges from the Retro-Cosmic Timeline."</p>
-
-          <div class="credits-grid">
-            <div class="credit-item">
-              <span class="credit-label">Directed By</span>
-              <span class="credit-val">Matt Shakman</span>
-            </div>
-            <div class="credit-item">
-              <span class="credit-label">Reed Richards</span>
-              <span class="credit-val">Pedro Pascal</span>
-            </div>
-          </div>
-
-          <div class="slide-buttons">
-            <button class="btn-cinema btn-cinema-primary btn-explore">Explore Prelude Dossier</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- SLIDE 03: AVENGERS: SECRET WARS -->
-      <section class="reel-slide" data-index="2">
-        <div class="slide-artwork">
-          <img src="assets/poster-secretwars.svg" alt="Avengers: Secret Wars Poster">
-          <div class="slide-scrim"></div>
+        <!-- HOURS -->
+        <div class="clock-group">
+          <div id="hud-hours" class="clock-val">12</div>
+          <div class="clock-lbl">HOURS</div>
         </div>
 
-        <div class="slide-content">
-          <div class="slide-meta-row">
-            <span class="slide-index-tag">[ 03 / 04 ]</span>
-            <span class="slide-date-tag">Multiverse Saga Climax · December 17, 2027</span>
-          </div>
+        <div class="clock-divider">:</div>
 
-          <h2 class="slide-title">Avengers: Secret Wars</h2>
-          <p class="slide-tagline">"In the Ashes of the Incursions, Battleworld Reigns."</p>
-
-          <div class="credits-grid">
-            <div class="credit-item">
-              <span class="credit-label">Screenplay By</span>
-              <span class="credit-val">Michael Waldron</span>
-            </div>
-            <div class="credit-item">
-              <span class="credit-label">Event Scope</span>
-              <span class="credit-val">Total Multiverse Unification</span>
-            </div>
-          </div>
-
-          <div class="slide-buttons">
-            <button class="btn-cinema btn-cinema-primary btn-explore">Battleworld Briefing</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- SLIDE 04: MARVEL STUDIOS' X-MEN -->
-      <section class="reel-slide" data-index="3">
-        <div class="slide-artwork">
-          <img src="assets/poster-xmen.svg" alt="Marvel Studios' X-Men Poster">
-          <div class="slide-scrim"></div>
+        <!-- MIN -->
+        <div class="clock-group">
+          <div id="hud-mins" class="clock-val">31</div>
+          <div class="clock-lbl">MIN</div>
         </div>
 
-        <div class="slide-content">
-          <div class="slide-meta-row">
-            <span class="slide-index-tag">[ 04 / 04 ]</span>
-            <span class="slide-date-tag">The Mutant Awakening · May 05, 2028</span>
-          </div>
+        <div class="clock-divider">:</div>
 
-          <h2 class="slide-title">Marvel's X-Men</h2>
-          <p class="slide-tagline">"The Next Mutation Crosses the Incursion Threshold."</p>
-
-          <div class="credits-grid">
-            <div class="credit-item">
-              <span class="credit-label">Production</span>
-              <span class="credit-val">Marvel Studios</span>
-            </div>
-            <div class="credit-item">
-              <span class="credit-label">Status</span>
-              <span class="credit-val">Confirmed Theatrical Release</span>
-            </div>
-          </div>
-
-          <div class="slide-buttons">
-            <button class="btn-cinema btn-cinema-primary btn-explore">Mutant Timeline Registry</button>
-          </div>
+        <!-- SEC -->
+        <div class="clock-group">
+          <div id="hud-secs" class="clock-val">40</div>
+          <div class="clock-lbl">SEC</div>
         </div>
-      </section>
+      </div>
 
+    </div>
+
+    <!-- Bottom Controls & Rating Bar -->
+    <div class="hero-bottom-bar">
+      <!-- Left Action Controls -->
+      <div class="bottom-left-controls">
+        <!-- Watch Live Switcher -->
+        <button id="btn-watch-live" class="btn-ctrl btn-watch-live" title="Watch Live Stream">
+          <span class="live-beacon"></span>
+          <span>Watch Live</span>
+        </button>
+
+        <!-- Live Chat Drawer Button -->
+        <button id="btn-live-chat" class="btn-ctrl" title="Open live fan chat">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          <span>Live Chat</span>
+        </button>
+
+        <!-- Audio Mute/Unmute Toggle -->
+        <button id="btn-audio-toggle" class="icon-ctrl-btn" title="Toggle Background Audio">
+          <span id="audio-icon">🔇</span>
+        </button>
+
+        <!-- Video Play/Pause Toggle -->
+        <button id="btn-video-toggle" class="icon-ctrl-btn" title="Pause / Play Video">
+          <span id="video-icon">⏸</span>
+        </button>
+      </div>
+
+      <!-- Right Chevron (Optional Explore Scroll) -->
+      <div>
+        <a href="#details" class="bottom-scroll-trigger" title="Explore Details">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </a>
+      </div>
     </div>
   </main>
 
-  <!-- Bottom Navigation & Scrub Bar -->
-  <footer class="cinema-footer">
-    <div class="footer-indexer">
-      <span class="current-index">01</span> / 04
-    </div>
-
-    <div class="footer-controls">
-      <button id="reel-prev" class="nav-arrow-btn" title="Previous Film">&#8592;</button>
-      <div class="reel-progress-track">
-        <div class="reel-progress-fill"></div>
+  <!-- Live Chat Slide-Over Drawer (Real Visitors Traffic) -->
+  <aside id="chat-drawer" class="chat-drawer" aria-label="Live Fan Chat">
+    <div class="chat-header">
+      <div class="chat-title-group">
+        <span class="chat-title">Live Multiverse Chat</span>
+        <span id="chat-online-badge" class="chat-online-badge">● LIVE CHAT</span>
       </div>
-      <button id="reel-next" class="nav-arrow-btn" title="Next Film">&#8594;</button>
+      <button id="close-chat" class="chat-close-btn" title="Close Chat">&times;</button>
     </div>
 
-    <div class="footer-meta-notes">
-      SCROLL / DRAG / KEYS (&#8592; &#8594;) TO NAVIGATE
+    <!-- User Alias Input -->
+    <div class="chat-user-bar">
+      <span class="user-bar-label">Your Name:</span>
+      <input type="text" id="chat-username-input" class="chat-user-input" maxlength="25"
+        placeholder="Enter your name or alias">
     </div>
-  </footer>
 
-  <!-- Interactive Deep Dossier Drawer (Modal) -->
-  <aside id="dossier-drawer" class="dossier-drawer" aria-hidden="true">
-    <button id="close-drawer" class="close-drawer-btn" title="Close Dossier">&times;</button>
-
-    <div class="drawer-container">
-      <div class="drawer-tag">Declassified Intelligence</div>
-      <h2 class="drawer-title">The Road to Battleworld</h2>
-
-      <div class="drawer-grid">
-        <!-- Cast Matrix -->
-        <div>
-          <h3 class="drawer-section-title">Confirmed Multiversal Frontline</h3>
-          <div class="cast-matrix">
-            <div class="cast-card">
-              <div class="cast-role-badge">The Sovereign Monarch</div>
-              <div class="cast-name">Victor von Doom</div>
-              <div class="cast-actor">Robert Downey Jr.</div>
-            </div>
-            <div class="cast-card">
-              <div class="cast-role-badge">The First Family</div>
-              <div class="cast-name">Reed Richards</div>
-              <div class="cast-actor">Pedro Pascal</div>
-            </div>
-            <div class="cast-card">
-              <div class="cast-role-badge">The Reality Nexus</div>
-              <div class="cast-name">Scarlet Witch</div>
-              <div class="cast-actor">Elizabeth Olsen</div>
-            </div>
-            <div class="cast-card">
-              <div class="cast-role-badge">Earth's Defender</div>
-              <div class="cast-name">Peter Parker</div>
-              <div class="cast-actor">Tom Holland</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Custom End Credits Badge Generator -->
-        <div class="badge-creator-box">
-          <div class="drawer-tag">Interactive Feature</div>
-          <h3 style="font-family: var(--font-cinema); font-size: 1.5rem; margin-top: 0.25rem;">Marvel End-Credits Title Card Generator</h3>
-          <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem;">Enter your hero alias to forge your personalized MCU end-credit teaser.</p>
-          
-          <div class="badge-input-line">
-            <input type="text" id="fan-name-input" class="badge-input" placeholder="Enter your moniker (e.g. SACHIN)..." maxlength="20">
-            <button id="copy-badge-btn" class="btn-cinema btn-cinema-primary">Copy Badge</button>
-          </div>
-
-          <div class="badge-screen-render">
-            <div id="badge-name-display" class="badge-user-name">YOU</div>
-            <div class="badge-return-text">WILL RETURN IN AVENGERS: DOOMSDAY</div>
-          </div>
-        </div>
-
-        <!-- Legal Fan Notice -->
-        <div class="legal-fan-notice">
-          <strong>Fair Use Notice &amp; Disclaimer:</strong>
-          This portal is an independent fan tribute project built strictly for countdown tracking and cultural commentary under the Fair Use doctrine (17 U.S.C. § 107). It is not affiliated with, endorsed by, or sponsored by Marvel Studios, The Walt Disney Company, or their subsidiaries. All character names and MCU properties remain trademarks of their respective owners.
-        </div>
+    <!-- Real Live Stream Messages (No fake bots) -->
+    <div id="chat-messages" class="chat-messages-container">
+      <div id="chat-empty-state" class="chat-empty-state">
+        <div class="empty-icon">💬</div>
+        <div class="empty-title">Real-Time Chat Active</div>
+        <div class="empty-sub">No messages yet. Send a message below to start the conversation!</div>
       </div>
     </div>
+
+    <!-- Chat Input Bar -->
+    <form id="chat-form" class="chat-input-bar">
+      <input type="text" id="chat-input" class="chat-input" placeholder="Type a message..." autocomplete="off" required>
+      <button type="submit" class="chat-send-btn">Send</button>
+    </form>
   </aside>
 
-  <!-- Master Cinema Reel Application JS -->
+  <!-- Secondary Information Section (Accessible via Scroll or Explore) -->
+  <section id="details" class="secondary-details-section">
+    <div class="container-narrow">
+      <div class="details-grid">
+        <div class="detail-card">
+          <div class="detail-tag">Marvel Studios Phase VI</div>
+          <h3 class="detail-title">Victor von Doom</h3>
+          <p class="detail-desc">Robert Downey Jr. returns to the Marvel Cinematic Universe in the definitive role of
+            Victor von Doom, sovereign ruler of Latveria and master of mystic arts.</p>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-tag">Directed By</div>
+          <h3 class="detail-title">Anthony &amp; Joe Russo</h3>
+          <p class="detail-desc">The visionary directors of <em>Avengers: Infinity War</em> and <em>Avengers:
+              Endgame</em> helm the catastrophic convergence leading directly into <em>Avengers: Secret Wars</em>.</p>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-tag">Theatrical Release</div>
+          <h3 class="detail-title">December 18, 2026</h3>
+          <p class="detail-desc">Exclusive theatrical engagement in IMAX, Dolby Cinema, and premium formats worldwide.
+            Incursions converge.</p>
+        </div>
+      </div>
+
+      <footer class="site-legal-footer">
+        <p class="disclaimer-text">
+          <strong>Legal Disclaimer:</strong> This is an independent, non-commercial fan tribute and countdown. "Avengers", "Doctor Doom", and all related characters and trademarks are the property of Marvel Characters, Inc. and The Walt Disney Company. This website is not affiliated with, endorsed by, or sponsored by Marvel Studios.
+        </p>
+      </footer>
+    </div>
+  </section>
+
+  <!-- Main JavaScript Controller -->
   <script src="js/main.js"></script>
 </body>
+
 </html>

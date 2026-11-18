@@ -1,8 +1,8 @@
-# DOOMSDAY WATCH: Avengers Multiverse Countdown Portal
+# DOOMSDAY WATCH: Avengers Countdown Portal
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/sachin-lolariya/avengers-doomsday-countdown)
 
-A high-performance cinematic fan countdown portal and multiversal intelligence tracker for Marvel Studios' **Avengers: Doomsday** (December 18, 2026) and **Avengers: Secret Wars** (December 17, 2027).
+A high-performance cinematic fan countdown portal and live streaming ambient experience for Marvel Studios' **Avengers: Doomsday** (December 18, 2026).
 
 ---
 
@@ -12,50 +12,42 @@ A high-performance cinematic fan countdown portal and multiversal intelligence t
 
 ---
 
-## 🚀 Key Features & Motion Systems
+## 🚀 Key Features & Architecture
 
-1. **Live Synchronized Dual Countdown Engine**:
-   * Millisecond-accurate UTC timer tracking days, hours, minutes, and seconds until *Avengers: Doomsday* (December 18, 2026).
-   * Secondary horizon countdown tracking *Avengers: Secret Wars* (December 17, 2027).
-   * Number-shift GSAP micro-animations on every ticking second.
+1. **Official Streamed Ambient Video Background**:
+   * Official YouTube IFrame Player integration streaming the Dolby Cinema Special Look trailer (`IqQ7ApyVdSg`).
+   * Seamless mode switching between atmospheric ambient loop (0:00–0:10) and full dramatic climax (1:32–1:50) via the **Watch Live** control.
+   * Zero local video/audio binary files stored in the repository, guaranteeing 100% copyright and DMCA compliance under the US Federal Court "Server Test" (*Perfect 10 v. Amazon/Google*).
 
-2. **Modulify-Inspired Motion & Design**:
-   * **Aurora Ambient Fog**: Custom canvas-rendered particle nebula in Doctor Doom's signature emerald green (`#10b981`) and incursion violet.
-   * **Cardwall Multiverse Roster**: Interactive 3D tilt character cards with instant category filtering and FLIP-animated intelligence dossier modals.
-   * **Console Defense Terminal**: Operable retro CRT phosphor terminal with scanlines, live command prompt (`help`, `doom`, `timeline`, `secretwars`, `incursion`), and quick-uplink chips.
-   * **Cinema Reel Roadmap**: Horizontal snap carousel highlighting the timeline from *The Fantastic Four: First Steps* (2025) to *Secret Wars* (2027).
+2. **Accurate 5-Unit Master Countdown Engine**:
+   * Millisecond-precise calendar calculation tracking Months, Days, Hours, Minutes, and Seconds until *Avengers: Doomsday* (December 18, 2026, 05:00:00 UTC).
+   * GreenSock GSAP 3 number-shift micro-animations on every second tick.
 
-3. **Interactive Fan Utilities**:
-   * **"Will Return" Badge Generator**: Real-time customizer rendering personalized MCU end-credit cards with one-click clipboard copying.
-   * **Web Audio Synthesizer**: Built-in cinematic atmospheric drone generator running directly via the Web Audio API without bulky or copyrighted external sound files.
-   * **Incursion Alerts**: Newsletter subscription with immediate validation and feedback.
+3. **Real-Time Fan Community Chat**:
+   * 100% authentic live fan traffic with real-time visitor counter (zero fake bot comments or synthetic intervals).
+   * Supported via Node.js server (`server.js`), Netlify serverless functions (`netlify/functions/chat.js`), and PHP API (`api/chat.php`).
 
-4. **Tech Stack**:
-   * **Frontend**: Semantic HTML5, Modular CSS3 (Design Tokens), Modern JavaScript (ES6+).
-   * **Animations**: GreenSock GSAP 3.12.5 + ScrollTrigger.
-   * **Backend**: PHP 8.x (`index.php`, `api/countdown.php`, `api/subscribe.php`).
-   * **Design Standards**: Governed by [DESIGN.md](./DESIGN.md) (`awesome-design-md`).
+4. **Cinematic Design & Responsive Motion**:
+   * Tailored single-banner interface matching high-end design token standards (`awesome-design-md` & `gsap-animation`).
+   * Dynamic typography sizing using CSS `clamp()` for perfect readability across mobile and 4K displays.
 
 ---
 
 ## 🛠️ Local Development
 
-### Option A: Static Server (HTML/CSS/JS)
-You can open `index.html` directly in any browser or run a lightweight local static server:
+### Option A: Node.js Server (Recommended for Full Video & Real Chat)
 ```bash
-npx serve .
-# or
-python -m http.server 8000
+node server.js
 ```
+Open `http://localhost:3000` in your browser.
 
-### Option B: PHP Server (Dynamic PHP Architecture)
-To test the PHP modular templates and REST API endpoints:
+### Option B: PHP Server
 ```bash
 php -S localhost:8000
 ```
-Open `http://localhost:8000` to view the PHP application.
+Open `http://localhost:8000` in your browser.
 
 ---
 
-## ⚖️ Legal & Fair Use Disclaimer
-This is an independent, non-profit fan tribute website created strictly for countdown tracking, cultural commentary, and fan discussion under the Fair Use doctrine (17 U.S.C. § 107). It is **not** endorsed by, affiliated with, or sponsored by Marvel Studios, The Walt Disney Company, or any of their subsidiaries. All character names and MCU references remain the property of their respective trademark holders.
+## ⚖️ Legal Disclaimer
+This is an independent, non-commercial fan tribute and countdown. "Avengers", "Doctor Doom", and all related characters and trademarks are the property of Marvel Characters, Inc. and The Walt Disney Company. This website is not affiliated with, endorsed by, or sponsored by Marvel Studios.
