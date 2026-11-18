@@ -1,6 +1,6 @@
 # DOOMSDAY WATCH: Avengers Multiverse Countdown Portal
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/sachincodes01/avengers-doomsday-countdown)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/sachin-lolariya/avengers-doomsday-countdown)
 
 A high-performance cinematic fan countdown portal and multiversal intelligence tracker for Marvel Studios' **Avengers: Doomsday** (December 18, 2026) and **Avengers: Secret Wars** (December 17, 2027).
 
@@ -8,7 +8,7 @@ A high-performance cinematic fan countdown portal and multiversal intelligence t
 
 ## ⚡ Live Deployment
 * **Live Netlify Portal**: [https://avengers-doomsday-countdown-pmk3.netlify.app](https://avengers-doomsday-countdown-pmk3.netlify.app)
-* **GitHub Repository**: [https://github.com/sachincodes01/avengers-doomsday-countdown](https://github.com/sachincodes01/avengers-doomsday-countdown)
+* **GitHub Repository**: [https://github.com/sachin-lolariya/avengers-doomsday-countdown](https://github.com/sachin-lolariya/avengers-doomsday-countdown)
 
 ---
 
