@@ -57,7 +57,6 @@ window.onYouTubeIframeAPIReady = function () {
 function onPlayerReady(event) {
   ytReady = true;
   event.target.mute();
-  event.target.seekTo(AMBIENT_START, true);
   event.target.playVideo();
 
   // Enforce high quality
@@ -65,28 +64,40 @@ function onPlayerReady(event) {
     event.target.setPlaybackQuality("hd1080");
   }
 
-  // Watchdog loop for precise timeline looping
+  // Watchdog loop for smooth, continuous looping without pauses
+  let isSeeking = false;
   setInterval(() => {
     if (!ytReady || !ytPlayer || typeof ytPlayer.getCurrentTime !== "function") return;
     try {
       const cur = ytPlayer.getCurrentTime();
       if (currentMode === "ambient") {
-        if (cur >= AMBIENT_END || cur < AMBIENT_START) {
+        if (cur >= AMBIENT_END && !isSeeking) {
+          isSeeking = true;
           ytPlayer.seekTo(AMBIENT_START, true);
+          ytPlayer.playVideo();
+          setTimeout(() => { isSeeking = false; }, 300);
         }
       } else if (currentMode === "live") {
-        if (cur >= LIVE_END || cur < (LIVE_START - 0.5)) {
+        if (cur >= LIVE_END && !isSeeking) {
+          isSeeking = true;
           ytPlayer.seekTo(LIVE_START, true);
+          ytPlayer.playVideo();
+          setTimeout(() => { isSeeking = false; }, 300);
         }
       }
     } catch (e) {
-      // Ignore transient seek errors
+      isSeeking = false;
     }
-  }, 100);
+  }, 150);
 }
 
 function onPlayerStateChange(event) {
-  if (event.data === YT.PlayerState.ENDED) {
+  // If player ever gets paused (by browser, YouTube OSD, or seek), instantly resume playback
+  if (event.data === YT.PlayerState.PAUSED) {
+    if (ytPlayer && typeof ytPlayer.playVideo === "function") {
+      ytPlayer.playVideo();
+    }
+  } else if (event.data === YT.PlayerState.ENDED) {
     const targetStart = (currentMode === "live") ? LIVE_START : AMBIENT_START;
     if (ytPlayer && typeof ytPlayer.seekTo === "function") {
       ytPlayer.seekTo(targetStart, true);

@@ -108,9 +108,15 @@ body {
   pointer-events: none;
 }
 
-/* Noise overlay disabled to prevent pixelation/haze */
-.video-noise-overlay {
-  display: none;
+/* Protective Click Shield: Absorbs all clicks/taps so YouTube iframe can NEVER be paused */
+.video-shield {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  background: transparent;
+  pointer-events: auto;
 }
 
 /* ==========================================================================
