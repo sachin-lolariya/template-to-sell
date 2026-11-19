@@ -1,123 +1,14 @@
 /**
  * ============================================================================
  * AVENGERS: DOOMSDAY - OFFICIAL FAN COUNTDOWN & AMBIENT EXPERIENCE
- * High-Performance Official YouTube Stream + Real Live Chat + GSAP Animation
- * 100% Non-Commercial Fan Tribute & Copyright Compliant
+ * High-Performance Direct Streaming Background Video + Real Live Chat + GSAP
+ * 100% Non-Commercial Fan Tribute & Copyright Compliant (Zero Overlays / Icons)
  * ============================================================================
  */
 
-// ----------------------------------------------------------------------------
-// 1. Video Timeline Constants & Global State
-// ----------------------------------------------------------------------------
-const VIDEO_ID = "IqQ7ApyVdSg"; // Official Dolby Cinema Avengers: Doomsday Special Look
-const AMBIENT_START = 0;       // 0:00
-const AMBIENT_END = 10;        // 0:10 (ambient atmospheric loop)
-const LIVE_START = 92;         // 1:32 (dramatic climax sequence)
-const LIVE_END = 110;          // 1:50
-
-let currentMode = "ambient";   // 'ambient' (0-10s loop muted) | 'live' (1:32-1:50 with audio)
-let ytPlayer = null;
-let ytReady = false;
-
-// ----------------------------------------------------------------------------
-// 2. Official YouTube IFrame Player API Callback (100% Legal & Safe)
-// ----------------------------------------------------------------------------
-window.onYouTubeIframeAPIReady = function () {
-  const originUrl = (window.location.origin && window.location.origin !== "null") 
-    ? window.location.origin 
-    : undefined;
-
-  ytPlayer = new YT.Player("youtube-bg-player", {
-    width: "100%",
-    height: "100%",
-    videoId: VIDEO_ID,
-    playerVars: {
-      autoplay: 1,
-      controls: 0,
-      disablekb: 1,
-      enablejsapi: 1,
-      fs: 0,
-      iv_load_policy: 3,
-      modestbranding: 1,
-      mute: 1,
-      playsinline: 1,
-      rel: 0,
-      showinfo: 0,
-      autohide: 1,
-      ...(originUrl ? { origin: originUrl } : {})
-    },
-    events: {
-      onReady: onPlayerReady,
-      onStateChange: onPlayerStateChange,
-      onError: onPlayerError
-    }
-  });
-};
-
-function onPlayerReady(event) {
-  ytReady = true;
-  event.target.mute();
-  event.target.playVideo();
-
-  // Enforce high quality
-  if (typeof event.target.setPlaybackQuality === "function") {
-    event.target.setPlaybackQuality("hd1080");
-  }
-
-  // Watchdog loop for smooth, continuous looping without pauses
-  let isSeeking = false;
-  setInterval(() => {
-    if (!ytReady || !ytPlayer || typeof ytPlayer.getCurrentTime !== "function") return;
-    try {
-      const cur = ytPlayer.getCurrentTime();
-      if (currentMode === "ambient") {
-        if (cur >= AMBIENT_END && !isSeeking) {
-          isSeeking = true;
-          ytPlayer.seekTo(AMBIENT_START, true);
-          ytPlayer.playVideo();
-          setTimeout(() => { isSeeking = false; }, 300);
-        }
-      } else if (currentMode === "live") {
-        if (cur >= LIVE_END && !isSeeking) {
-          isSeeking = true;
-          ytPlayer.seekTo(LIVE_START, true);
-          ytPlayer.playVideo();
-          setTimeout(() => { isSeeking = false; }, 300);
-        }
-      }
-    } catch (e) {
-      isSeeking = false;
-    }
-  }, 150);
-}
-
-function onPlayerStateChange(event) {
-  // If player ever gets paused (by browser, YouTube OSD, or seek), instantly resume playback
-  if (event.data === YT.PlayerState.PAUSED) {
-    if (ytPlayer && typeof ytPlayer.playVideo === "function") {
-      ytPlayer.playVideo();
-    }
-  } else if (event.data === YT.PlayerState.ENDED) {
-    const targetStart = (currentMode === "live") ? LIVE_START : AMBIENT_START;
-    if (ytPlayer && typeof ytPlayer.seekTo === "function") {
-      ytPlayer.seekTo(targetStart, true);
-      ytPlayer.playVideo();
-    }
-  }
-}
-
-function onPlayerError(event) {
-  console.warn("YouTube Player error code:", event.data);
-  // YouTube Error 153 occurs only on file:/// local disk paths due to Chrome origin security
-  if (window.location.protocol === "file:") {
-    console.info("Note: For full YouTube iframe streaming and real chat synchronization, visit http://localhost:3000");
-  }
-}
-
-// ----------------------------------------------------------------------------
-// 3. DOM Ready Logic & Interactive Controls
-// ----------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
+  const bgVideo = document.getElementById("bg-video-player");
+
   // Bottom Controls
   const btnWatchLive = document.getElementById("btn-watch-live");
   const btnLiveChat = document.getElementById("btn-live-chat");
@@ -131,52 +22,41 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatInput = document.getElementById("chat-input");
   const chatMessages = document.getElementById("chat-messages");
 
-  // Show a helpful tip if opened via file:/// instead of http://localhost:3000
-  if (window.location.protocol === "file:") {
-    const notice = document.createElement("div");
-    notice.style.cssText = `
-      position: fixed;
-      top: 72px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      color: #e2e8f0;
-      padding: 0.5rem 1rem;
-      border-radius: 9999px;
-      font-size: 0.78rem;
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    `;
-    notice.innerHTML = `
-      <span style="color:#ef4444; font-weight:700;">Local Test:</span>
-      <span>For full YouTube live stream & real chat, view at <a href="http://localhost:3000" style="color:#60a5fa; text-decoration:underline;">http://localhost:3000</a></span>
-      <button style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:1rem; margin-left:0.5rem;" onclick="this.parentElement.remove()">×</button>
-    `;
-    document.body.appendChild(notice);
+  let currentMode = "ambient"; // 'ambient' (muted continuous loop) | 'live' (soundtrack unmuted)
+
+  // --------------------------------------------------------------------------
+  // 1. Direct HTML5 Background Video Controller
+  // (Zero Play/Pause Overlays, Zero YouTube Chrome, Smooth CDN Streaming)
+  // --------------------------------------------------------------------------
+  if (bgVideo) {
+    bgVideo.muted = true;
+    const playPromise = bgVideo.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Fallback for strict browser autoplay policies
+        const startOnUserClick = () => {
+          bgVideo.play();
+          document.removeEventListener("click", startOnUserClick);
+        };
+        document.addEventListener("click", startOnUserClick, { once: true });
+      });
+    }
   }
 
   // --------------------------------------------------------------------------
-  // A. "Watch Live" Switcher (Ambient 0-10s vs Live 1:32-1:50)
+  // 2. "Watch Live" Switcher (Ambient Muted vs Live with Epic Soundtrack)
   // Clean button: NO "1:32" and NO "((•))", only pulsing beacon + "Watch Live"
   // --------------------------------------------------------------------------
-  if (btnWatchLive) {
+  if (btnWatchLive && bgVideo) {
     btnWatchLive.addEventListener("click", () => {
       if (currentMode === "ambient") {
         currentMode = "live";
         btnWatchLive.classList.add("live-active");
         btnWatchLive.innerHTML = `<span class="live-beacon"></span><span>Watch Live</span>`;
 
-        if (ytPlayer && ytReady && typeof ytPlayer.seekTo === "function") {
-          ytPlayer.unMute();
-          ytPlayer.setVolume(100);
-          ytPlayer.seekTo(LIVE_START, true);
-          ytPlayer.playVideo();
-        }
+        bgVideo.muted = false;
+        bgVideo.volume = 1.0;
+        bgVideo.play();
 
         if (audioIcon) audioIcon.textContent = "🔊";
       } else {
@@ -184,40 +64,29 @@ document.addEventListener("DOMContentLoaded", () => {
         btnWatchLive.classList.remove("live-active");
         btnWatchLive.innerHTML = `<span class="live-beacon"></span><span>Watch Live</span>`;
 
-        if (ytPlayer && ytReady && typeof ytPlayer.seekTo === "function") {
-          ytPlayer.mute();
-          ytPlayer.seekTo(AMBIENT_START, true);
-          ytPlayer.playVideo();
-        }
-
+        bgVideo.muted = true;
         if (audioIcon) audioIcon.textContent = "🔇";
       }
     });
   }
 
   // --------------------------------------------------------------------------
-  // B. Audio Mute / Unmute Toggle
+  // 3. Audio Mute / Unmute Toggle
   // --------------------------------------------------------------------------
-  if (btnAudioToggle) {
+  if (btnAudioToggle && bgVideo) {
     btnAudioToggle.addEventListener("click", () => {
-      if (!ytPlayer || !ytReady) return;
-      try {
-        if (ytPlayer.isMuted()) {
-          ytPlayer.unMute();
-          ytPlayer.setVolume(100);
-          if (audioIcon) audioIcon.textContent = "🔊";
-        } else {
-          ytPlayer.mute();
-          if (audioIcon) audioIcon.textContent = "🔇";
-        }
-      } catch (e) {
-        console.warn("Audio toggle error:", e);
+      bgVideo.muted = !bgVideo.muted;
+      if (!bgVideo.muted) {
+        bgVideo.volume = 1.0;
+        if (audioIcon) audioIcon.textContent = "🔊";
+      } else {
+        if (audioIcon) audioIcon.textContent = "🔇";
       }
     });
   }
 
   // --------------------------------------------------------------------------
-  // C. Real-Time Live Chat (Real Traffic, Zero Fake Bots)
+  // 4. Real-Time Live Chat (Real Traffic, Zero Fake Bots)
   // --------------------------------------------------------------------------
   const chatUsernameInput = document.getElementById("chat-username-input");
   let currentUser = localStorage.getItem("avc_chat_user");
@@ -427,7 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ----------------------------------------------------------------------------
-  // 4. 5-Unit Master Countdown Engine (Months, Days, Hours, Min, Sec)
+  // 5. 5-Unit Master Countdown Engine (Months, Days, Hours, Min, Sec)
   // Target: December 18, 2026, 05:00:00 UTC
   // ----------------------------------------------------------------------------
   const TARGET_DATE = new Date("2026-12-18T05:00:00Z");
@@ -509,15 +378,20 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(calculateCountdown, 1000);
 
   // ----------------------------------------------------------------------------
-  // 5. GSAP Cinematic Entrance & Interactive Micro-Animations (/gsap-animation)
+  // 6. GSAP Cinematic Entrance & Interactive Micro-Animations (/gsap-animation)
   // ----------------------------------------------------------------------------
   if (typeof gsap !== "undefined") {
     const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
     tl.fromTo(".site-header",
-      { y: -40, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.8, delay: 0.2 }
+      { y: -30, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.8, delay: 0.15 }
     )
+      .fromTo(".header-nav-dock",
+        { scale: 0.94, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.7 },
+        "-=0.4"
+      )
       .fromTo(".hero-title",
         { y: 30, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.9 },
@@ -535,9 +409,9 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
     // Subtle Button Micro-Interactions
-    document.querySelectorAll(".btn-ctrl, .icon-ctrl-btn").forEach(btn => {
+    document.querySelectorAll(".btn-ctrl, .icon-ctrl-btn, .nav-dock-item, .lang-pill").forEach(btn => {
       btn.addEventListener("mouseenter", () => {
-        gsap.to(btn, { scale: 1.05, duration: 0.2, ease: "power2.out" });
+        gsap.to(btn, { scale: 1.04, duration: 0.2, ease: "power2.out" });
       });
       btn.addEventListener("mouseleave", () => {
         gsap.to(btn, { scale: 1, duration: 0.2, ease: "power2.out" });

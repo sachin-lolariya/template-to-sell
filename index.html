@@ -9,63 +9,72 @@
     content="Official single banner countdown and live video ambient experience for Marvel Studios' Avengers: Doomsday (December 18, 2026).">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 
-  <!-- Master Stylesheet matching AvengersCountdown.com -->
-  <link rel="stylesheet" href="css/style.css?v=3.1">
+  <!-- Master Stylesheet (awesome-design-md) -->
+  <link rel="stylesheet" href="css/style.css?v=4.0">
 
   <!-- GreenSock GSAP 3 -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-
-  <!-- YouTube IFrame Player API (Official Stream & 100% Copyright Immune) -->
-  <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 
 <body>
 
-  <!-- Fullscreen 16:9 Official YouTube Video Background -->
+  <!-- Fullscreen 16:9 Cinematic Video Background (Zero Play/Pause Overlays) -->
   <div id="bg-video-container" class="video-bg-container">
     <div class="video-bg-wrapper">
-      <div id="youtube-bg-player"></div>
+      <video id="bg-video-player" autoplay muted loop playsinline preload="auto" class="video-bg-element">
+        <source src="https://media.rekydev.fr/avengerscountdown/background.webm" type="video/webm">
+        <source src="https://media.rekydev.fr/avengerscountdown/background.mp4" type="video/mp4">
+      </video>
     </div>
-    <!-- Scrim & Transparent Protective Shield Overlays -->
+    <!-- Scrim & Vignette Cinematic Overlay -->
     <div class="video-overlay-scrim"></div>
-    <div class="video-shield"></div>
   </div>
 
-  <!-- Top Navigation Header -->
+  <!-- Top Navigation Header (Bespoke Precision Dark Dock - awesome-design-md) -->
   <header class="site-header">
-    <a href="#" class="header-brand">
-      <span class="brand-badge-box">AVC</span>
-      <span class="brand-name">Avengers Countdown</span>
-    </a>
+    <div class="header-left">
+      <a href="#" class="header-brand">
+        <div class="brand-badge-box">
+          <span class="brand-badge-text">AVC</span>
+          <span class="brand-badge-glow"></span>
+        </div>
+        <div class="brand-title-wrap">
+          <span class="brand-name">Avengers Countdown</span>
+          <span class="brand-status-tag">
+            <span class="brand-status-dot"></span>
+            <span>LIVE INTELLIGENCE</span>
+          </span>
+        </div>
+      </a>
+    </div>
 
-    <nav class="header-nav">
-      <a href="#countdown" class="nav-pill active">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+    <!-- Center Floating Segmented Nav Dock -->
+    <nav class="header-nav-dock">
+      <a href="#countdown" class="nav-dock-item active">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
-          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-          <polyline points="9 22 9 12 15 12 15 22" />
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
         </svg>
         <span>Countdown</span>
       </a>
 
-      <a href="#watch-planner" class="nav-pill" id="nav-planner-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+      <a href="#watch-planner" class="nav-dock-item" id="nav-planner-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
-          <line x1="8" y1="6" x2="21" y2="6" />
-          <line x1="8" y1="12" x2="21" y2="12" />
-          <line x1="8" y1="18" x2="21" y2="18" />
-          <line x1="3" y1="6" x2="3.01" y2="6" />
-          <line x1="3" y1="12" x2="3.01" y2="12" />
-          <line x1="3" y1="18" x2="3.01" y2="18" />
+          <path d="M8 2v4" />
+          <path d="M16 2v4" />
+          <rect width="18" height="18" x="3" y="4" rx="2" />
+          <path d="M3 10h18" />
+          <path d="m9 16 2 2 4-4" />
         </svg>
         <span>Watch planner</span>
       </a>
 
-      <a href="#news" class="nav-pill" id="nav-news-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+      <a href="#news" class="nav-dock-item" id="nav-news-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
-          <path
-            d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
+          <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
           <path d="M18 14h-8" />
           <path d="M15 18h-5" />
           <path d="M10 6h8v4h-8V6Z" />
@@ -73,15 +82,23 @@
         <span>News</span>
       </a>
 
-      <div class="nav-pill" style="cursor: pointer;" id="nav-explore-btn">
-        <span>Explore</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+      <div class="nav-dock-item nav-dock-dropdown" id="nav-explore-btn" role="button" tabindex="0">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+        </svg>
+        <span>Explore</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round" class="dropdown-chevron">
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </div>
+    </nav>
 
-      <div class="lang-selector">
+    <!-- Right Utility Group -->
+    <div class="header-right">
+      <div class="lang-pill" role="button" tabindex="0" title="Select Language">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10" />
@@ -89,8 +106,12 @@
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
         </svg>
         <span>EN</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </div>
-    </nav>
+    </div>
   </header>
 
   <!-- Hero Fullscreen Single Banner -->
@@ -248,7 +269,7 @@
   </section>
 
   <!-- Main JavaScript Controller -->
-  <script src="js/main.js?v=3.1"></script>
+  <script src="js/main.js?v=4.0"></script>
 </body>
 
 </html>
