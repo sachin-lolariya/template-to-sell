@@ -2,6 +2,9 @@
   publish = "."
   functions = "netlify/functions"
 
+[functions."daily-briefing"]
+  schedule = "0 5 * * *"
+
 [[redirects]]
   from = "/api/chat"
   to = "/.netlify/functions/chat"

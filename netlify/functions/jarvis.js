@@ -490,47 +490,80 @@ ${summaryFiles}
 }
 
 // ==========================================
-// FEATURE 4: AUTONOMOUS DAILY BRIEFING
+// FEATURE 4: AUTONOMOUS DAILY BRIEFING & FLEET STANDUP
 // ==========================================
 async function handleDailyBriefing(chatId, currentRepo) {
-  await sendTelegram(chatId, `🌅 *JARVIS Synthesizing Daily Executive Briefing...*`, MAIN_KEYBOARD);
+  await sendTelegram(chatId, `🌅 *JARVIS Synthesizing Executive Standup & Fleet Report...*`, MAIN_KEYBOARD);
 
-  // Fetch user repos and commits
-  const reposRes = await githubRequest(`/user/repos?sort=pushed&per_page=6`);
-  let repoSummaries = [];
-  if (reposRes.status === 200 && Array.isArray(reposRes.data)) {
-    repoSummaries = reposRes.data.map(r => ({
-      name: r.full_name,
-      updated_at: r.pushed_at,
-      description: r.description || 'Personal project'
-    }));
+  // 1. Check Bot Fleet
+  const botFleet = [
+    { name: 'Jarvis Assistant', handle: '@sachin_jarvis_ai_bot', token: TELEGRAM_TOKEN },
+    { name: 'Mobile & Game Builder', handle: '@sachin_appbuilder_bot', token: '8689464042:AAEpbxtWM3daawqJnwBpuJ8WOX6u3OrrpEo' }
+  ];
+
+  const botStatuses = [];
+  for (const b of botFleet) {
+    const info = await new Promise((res) => {
+      const req = https.request(`https://api.telegram.org/bot${b.token}/getWebhookInfo`, (r) => {
+        let d = '';
+        r.on('data', c => d += c);
+        r.on('end', () => { try { res(JSON.parse(d)); } catch (e) { res(null); } });
+      });
+      req.on('error', () => res(null));
+      req.end();
+    });
+    if (info && info.ok) {
+      const isUp = !info.result.last_error_message;
+      botStatuses.push(`• ${b.name} (${b.handle}): ${isUp ? '🟢 LIVE (24/7 Cloud)' : '🟡 Awaiting Public Setting in Netlify'}`);
+    } else {
+      botStatuses.push(`• ${b.name}: 🔴 Offline`);
+    }
   }
 
-  // Fetch latest commit on active repo
-  const commitsRes = await githubRequest(`/repos/${currentRepo}/commits?per_page=3`);
+  // 2. Check Live Website
+  const siteRes = await new Promise((res) => {
+    const req = https.request('https://avengers-doomsday-countdown-pmk3.netlify.app', (r) => res(r.statusCode));
+    req.on('error', () => res(500));
+    req.end();
+  });
+  const siteStatus = `• Avengers Countdown: ${siteRes === 200 ? '🟢 ONLINE (200 OK)' : `🔴 HTTP ${siteRes}`}`;
+
+  // 3. Fetch latest commits
+  const commitsRes = await githubRequest(`/repos/${currentRepo}/commits?per_page=2`);
   let latestCommits = [];
   if (commitsRes.status === 200 && Array.isArray(commitsRes.data)) {
     latestCommits = commitsRes.data.map(c => `\`${c.sha.slice(0, 7)}\` - ${c.commit.message}`);
   }
 
-  const standupPrompt = `You are JARVIS, Tony Stark's executive AI assistant, speaking to Sachin Lolariya.
+  const standupPrompt = `You are JARVIS, Tony Stark's executive AI assistant, delivering the Standup Briefing to Sachin Lolariya.
 Active Repository: "${currentRepo}".
+Bot Fleet Status:
+${botStatuses.join('\n')}
+Live Website:
+${siteStatus}
 Latest Commits on Active Repo:
 ${latestCommits.join('\n')}
-Recent GitHub Repositories:
-${repoSummaries.map(r => `- ${r.name} (last updated ${r.updated_at})`).join('\n')}
 
 Synthesize an executive daily standup briefing with this exact structure:
-🌅 *Good day, Sir. Here is your Daily Standup Briefing:*
+🌅 *Good day, Sir. Here is your Executive Standup Briefing:*
 
-• 📊 *Project Velocity:* Concise summary of recent commits and updates.
-• 🎯 *Recommended Focus:* 1 high-value feature or milestone to tackle next on ${currentRepo}.
-• 💡 *JARVIS Pro-Tip:* An actionable architecture, design, or performance insight.
+🤖 *Bot Fleet & Cloud Status:*
+${botStatuses.join('\n')}
+${siteStatus}
 
-Keep the tone polished, confident, loyal, and concise.`;
+📊 *Project Velocity:*
+Summary of recent updates and commits.
+
+🎯 *Recommended Focus for Today:*
+The single most impactful milestone or goal to tackle today.
+
+💡 *JARVIS Proactive Suggestions (What We Can Build Today):*
+Give 3 exciting, high-value, actionable ideas we can build today (e.g. video trailer HUD overlay, audio chime sound alerts, or new mobile game template).
+
+Keep the tone energetic, confident, loyal, and motivating.`;
 
   const briefingText = await callGemini(standupPrompt, false);
-  const finalMsg = briefingText || `🌅 *Good day, Sir.* All systems operating at 100% capacity in the Netlify Cloud.\n\n• *Active Repository:* \`${currentRepo}\`\n• *Latest Commit:* ${latestCommits[0] || 'Synced'}\n• *Recommendation:* Ready for autonomous tasks anytime!`;
+  const finalMsg = briefingText || `🌅 *Good day, Sir.*\n\n${botStatuses.join('\n')}\n${siteStatus}\n\n• *Active Repository:* \`${currentRepo}\`\n• *Latest Commit:* ${latestCommits[0] || 'Synced'}\n• *Recommendation:* Ready for autonomous tasks anytime!`;
 
   await sendTelegram(chatId, finalMsg, MAIN_KEYBOARD);
 }
