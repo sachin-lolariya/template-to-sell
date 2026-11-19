@@ -35,17 +35,15 @@ window.onYouTubeIframeAPIReady = function () {
       autoplay: 1,
       controls: 0,
       disablekb: 1,
+      enablejsapi: 1,
       fs: 0,
+      iv_load_policy: 3,
       modestbranding: 1,
       mute: 1,
       playsinline: 1,
       rel: 0,
       showinfo: 0,
-      iv_load_policy: 3,
-      start: AMBIENT_START,
-      end: AMBIENT_END,
-      loop: 1,
-      playlist: VIDEO_ID,
+      autohide: 1,
       ...(originUrl ? { origin: originUrl } : {})
     },
     events: {
@@ -59,6 +57,7 @@ window.onYouTubeIframeAPIReady = function () {
 function onPlayerReady(event) {
   ytReady = true;
   event.target.mute();
+  event.target.seekTo(AMBIENT_START, true);
   event.target.playVideo();
 
   // Enforce high quality
@@ -87,13 +86,9 @@ function onPlayerReady(event) {
 }
 
 function onPlayerStateChange(event) {
-  const videoIcon = document.getElementById("video-icon");
-  if (event.data === YT.PlayerState.PLAYING) {
-    if (videoIcon) videoIcon.textContent = "⏸";
-  } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
-    if (videoIcon) videoIcon.textContent = "▶";
-    if (event.data === YT.PlayerState.ENDED) {
-      const targetStart = (currentMode === "live") ? LIVE_START : AMBIENT_START;
+  if (event.data === YT.PlayerState.ENDED) {
+    const targetStart = (currentMode === "live") ? LIVE_START : AMBIENT_START;
+    if (ytPlayer && typeof ytPlayer.seekTo === "function") {
       ytPlayer.seekTo(targetStart, true);
       ytPlayer.playVideo();
     }
@@ -116,9 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnWatchLive = document.getElementById("btn-watch-live");
   const btnLiveChat = document.getElementById("btn-live-chat");
   const btnAudioToggle = document.getElementById("btn-audio-toggle");
-  const btnVideoToggle = document.getElementById("btn-video-toggle");
   const audioIcon = document.getElementById("audio-icon");
-  const videoIcon = document.getElementById("video-icon");
 
   // Chat Drawer Elements
   const chatDrawer = document.getElementById("chat-drawer");
@@ -213,28 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // --------------------------------------------------------------------------
-  // C. Video Play / Pause Toggle
-  // --------------------------------------------------------------------------
-  if (btnVideoToggle) {
-    btnVideoToggle.addEventListener("click", () => {
-      if (!ytPlayer || !ytReady) return;
-      try {
-        const state = ytPlayer.getPlayerState();
-        if (state === YT.PlayerState.PLAYING) {
-          ytPlayer.pauseVideo();
-          if (videoIcon) videoIcon.textContent = "▶";
-        } else {
-          ytPlayer.playVideo();
-          if (videoIcon) videoIcon.textContent = "⏸";
-        }
-      } catch (e) {
-        console.warn("Video toggle error:", e);
-      }
-    });
-  }
-
-  // --------------------------------------------------------------------------
-  // D. Real-Time Live Chat (Real Traffic, Zero Fake Bots)
+  // C. Real-Time Live Chat (Real Traffic, Zero Fake Bots)
   // --------------------------------------------------------------------------
   const chatUsernameInput = document.getElementById("chat-username-input");
   let currentUser = localStorage.getItem("avc_chat_user");
