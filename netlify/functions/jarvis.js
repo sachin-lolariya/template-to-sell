@@ -4,7 +4,8 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ALLOWED_CHAT_ID = process.env.ALLOWED_CHAT_ID;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const GITHUB_REPO = process.env.GITHUB_REPO || 'sachin-lolariya/avengers-doomsday-countdown';
+const STATE_REPO = process.env.GITHUB_REPO || 'sachin-lolariya/avengers-doomsday-countdown';
+const STATE_FILE = '.jarvis-state.json';
 
 // Helper: Send Telegram Message
 function sendTelegram(chatId, text, extra = {}) {
@@ -31,6 +32,25 @@ function sendTelegram(chatId, text, extra = {}) {
     });
 
     req.on('error', () => resolve(null));
+    req.write(payload);
+    req.end();
+  });
+}
+
+// Helper: Answer Telegram Callback Query
+function answerCallback(queryId, text = '') {
+  return new Promise((resolve) => {
+    const payload = JSON.stringify({ callback_query_id: queryId, text });
+    const req = https.request({
+      hostname: 'api.telegram.org',
+      path: `/bot${TELEGRAM_TOKEN}/answerCallbackQuery`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    }, () => resolve());
+    req.on('error', () => resolve());
     req.write(payload);
     req.end();
   });
@@ -71,17 +91,34 @@ function githubRequest(endpoint, method = 'GET', body = null) {
   });
 }
 
+// State Management: Get & Set Active Repository across Serverless Invocations
+async function getActiveRepo() {
+  const res = await githubRequest(`/repos/${STATE_REPO}/contents/${STATE_FILE}`);
+  if (res.status === 200 && res.data && res.data.content) {
+    try {
+      const parsed = JSON.parse(Buffer.from(res.data.content, 'base64').toString('utf-8'));
+      if (parsed.activeRepo) return { repo: parsed.activeRepo, sha: res.data.sha };
+    } catch (e) {}
+  }
+  return { repo: STATE_REPO, sha: null };
+}
+
+async function setActiveRepo(newRepo, currentSha) {
+  const content = JSON.stringify({ activeRepo: newRepo, updatedAt: new Date().toISOString() }, null, 2);
+  const body = {
+    message: `Cloud JARVIS: Switch active repo to ${newRepo}`,
+    content: Buffer.from(content).toString('base64'),
+    ...(currentSha ? { sha: currentSha } : {})
+  };
+  return await githubRequest(`/repos/${STATE_REPO}/contents/${STATE_FILE}`, 'PUT', body);
+}
+
 // Helper: Gemini API
 function callGemini(prompt) {
   return new Promise((resolve) => {
     const payload = JSON.stringify({
-      contents: [{
-        parts: [{ text: prompt }]
-      }],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 8192
-      }
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.2, maxOutputTokens: 8192 }
     });
 
     const pathUrl = `/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -116,8 +153,9 @@ function callGemini(prompt) {
 const MAIN_KEYBOARD = {
   reply_markup: {
     keyboard: [
-      [{ text: '⚡ Cloud Status' }, { text: '🌐 Live Website' }],
-      [{ text: '🚀 Recent Commits' }, { text: '❓ Help' }]
+      [{ text: '⚡ Cloud Status' }, { text: '📂 Repositories' }],
+      [{ text: '🌐 Live Website' }, { text: '🚀 Recent Commits' }],
+      [{ text: '❓ Help' }]
     ],
     resize_keyboard: true,
     is_persistent: true
@@ -139,6 +177,38 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: 'Bad request' };
   }
 
+  // Handle Button Callbacks (Inline Keyboards)
+  if (body.callback_query) {
+    const query = body.callback_query;
+    const chatId = String(query.message.chat.id);
+    const data = query.data;
+
+    await answerCallback(query.id);
+
+    if (ALLOWED_CHAT_ID && chatId !== String(ALLOWED_CHAT_ID)) {
+      await sendTelegram(chatId, `⛔ Access Denied.`);
+      return { statusCode: 200, body: 'forbidden' };
+    }
+
+    if (data.startsWith('set_repo:')) {
+      const chosenRepo = data.replace('set_repo:', '');
+      const stateObj = await getActiveRepo();
+      await setActiveRepo(chosenRepo, stateObj.sha);
+
+      const msgSwitched = `✅ *Active Repository Switched!*
+
+📂 *Current Repo:* \`${chosenRepo}\`
+
+💡 *You can now text any code edits, features, or design changes and JARVIS will commit them directly to this repository!*`;
+
+      await sendTelegram(chatId, msgSwitched, MAIN_KEYBOARD);
+      return { statusCode: 200, body: 'ok' };
+    }
+
+    return { statusCode: 200, body: 'ok' };
+  }
+
+  // Handle Normal Text Messages
   const message = body.message || body.edited_message;
   if (!message || !message.text) {
     return { statusCode: 200, body: 'ok' };
@@ -153,107 +223,144 @@ exports.handler = async (event) => {
     return { statusCode: 200, body: 'forbidden' };
   }
 
+  const stateObj = await getActiveRepo();
+  const currentRepo = stateObj.repo;
+
   // 1. /start or Help
   if (text.startsWith('/start') || text === '❓ Help' || text.startsWith('/help')) {
     const welcome = `☁️ *Cloud JARVIS Online 24/7*
 
 Good day, sir. I am running continuously in the Netlify Cloud.
-*Your laptop can be completely turned off* and I will still execute all your coding and git tasks!
+*Your laptop can be completely off* and I will manage and code across all your GitHub repositories!
 
-*Touch Buttons:*
-• ⚡ *Cloud Status* - Verify cloud health, repo, and live deployment
+*Quick Touch Buttons:*
+• ⚡ *Cloud Status* - Health, active repo & latest commit
+• 📂 *Repositories* - View & switch between your GitHub projects
 • 🌐 *Live Website* - Open your live Netlify website
-• 🚀 *Recent Commits* - View latest updates pushed to GitHub
+• 🚀 *Recent Commits* - View latest updates on current repo
 
-*Natural Language Tasks:*
-You can text me anything you want changed on your website:
-• *"Change the banner title to AVENGERS: DOOMSDAY // CLOUD EDITION"*
-• *"In style.css, make the background darker with a gold glow"*
-• *"Add a new disclaimer footer to index.html"*
+*Mini-Antigravity AI (Text or Voice):*
+You can text me ANY coding or design changes directly:
+• *"Change the banner subtitle to 'PHASE VI // LIVE INVASION'"*
+• *"In README.md, update the skills badge to include React and GSAP"*
+• *"In style.css, make the countdown timer glow gold"*
 
-I will edit the code, commit it to GitHub, and deploy it live automatically!`;
+I will analyze your code with Gemini AI, apply the changes, and commit directly to GitHub!`;
 
     await sendTelegram(chatId, welcome, MAIN_KEYBOARD);
     return { statusCode: 200, body: 'ok' };
   }
 
-  // 2. ⚡ Cloud Status
+  // 2. 📂 Repositories (Multi-Project Switcher)
+  if (text === '📂 Repositories' || text === '/repos') {
+    const ghRes = await githubRequest(`/user/repos?sort=updated&per_page=12`);
+    if (ghRes.status === 200 && Array.isArray(ghRes.data)) {
+      const buttons = ghRes.data.map(r => [{
+        text: (r.full_name === currentRepo ? `🟢 ${r.name} (Active)` : `📁 ${r.name}`),
+        callback_data: `set_repo:${r.full_name}`
+      }]);
+
+      const inlineKeyboard = {
+        reply_markup: { inline_keyboard: buttons }
+      };
+
+      await sendTelegram(chatId, `📂 *Your GitHub Repositories:*\n*Active Repository:* \`${currentRepo}\`\n\nTap any repository below to switch active context:`, inlineKeyboard);
+    } else {
+      await sendTelegram(chatId, `⚠️ Could not fetch repositories from GitHub (HTTP ${ghRes.status}).`, MAIN_KEYBOARD);
+    }
+    return { statusCode: 200, body: 'ok' };
+  }
+
+  // 3. ⚡ Cloud Status
   if (text === '⚡ Cloud Status' || text === '/status') {
-    const ghRes = await githubRequest(`/repos/${GITHUB_REPO}/commits?per_page=1`);
+    const ghRes = await githubRequest(`/repos/${currentRepo}/commits?per_page=1`);
     let lastCommit = 'Unknown';
     if (ghRes.status === 200 && Array.isArray(ghRes.data) && ghRes.data[0]) {
       lastCommit = `\`${ghRes.data[0].sha.slice(0, 7)}\` - ${ghRes.data[0].commit.message}`;
     }
 
+    const isSiteRepo = currentRepo.includes('avengers');
+    const liveLink = isSiteRepo ? '\n• *Live Website:* https://avengers-doomsday-countdown-pmk3.netlify.app' : '';
+
     const statusMsg = `☁️ *Cloud JARVIS Status Report:*
 • *Platform:* Netlify Cloud Serverless (24/7)
-• *Laptop Power:* Not required (Laptop can be OFF)
-• *Repository:* \`${GITHUB_REPO}\`
-• *Latest Commit:* ${lastCommit}
-• *Live URL:* [avengerscountdown.com](https://avengers-doomsday-countdown-pmk3.netlify.app)
-• *AI Brain:* Google Gemini 2.0 Flash (Active)`;
+• *Laptop Power:* Not required (Runs with laptop OFF)
+• *Active Repository:* \`${currentRepo}\`
+• *Latest Commit:* ${lastCommit}${liveLink}
+• *AI Brain:* Google Gemini 2.0 Flash (Online)`;
 
     await sendTelegram(chatId, statusMsg, MAIN_KEYBOARD);
     return { statusCode: 200, body: 'ok' };
   }
 
-  // 3. 🌐 Live Website
+  // 4. 🌐 Live Website
   if (text === '🌐 Live Website' || text === '/site') {
     await sendTelegram(chatId, `🌐 *Your Live Website:*
 https://avengers-doomsday-countdown-pmk3.netlify.app
 
-✨ Every time you ask Cloud JARVIS to make changes, Netlify automatically updates this live site in 15 seconds!`, MAIN_KEYBOARD);
+✨ Tap **📂 Repositories** to switch between projects anytime!`, MAIN_KEYBOARD);
     return { statusCode: 200, body: 'ok' };
   }
 
-  // 4. 🚀 Recent Commits
+  // 5. 🚀 Recent Commits
   if (text === '🚀 Recent Commits' || text === '/commits') {
-    const ghRes = await githubRequest(`/repos/${GITHUB_REPO}/commits?per_page=3`);
+    const ghRes = await githubRequest(`/repos/${currentRepo}/commits?per_page=3`);
     if (ghRes.status === 200 && Array.isArray(ghRes.data)) {
-      const list = ghRes.data.map(c => `• \`${c.sha.slice(0, 7)}\`: ${c.commit.message} _(${c.commit.author.name})_`).join('\n');
-      await sendTelegram(chatId, `🚀 *Recent GitHub Commits:*\n\n${list}`, MAIN_KEYBOARD);
+      const list = ghRes.data.map(c => `• \`${c.sha.slice(0, 7)}\`: ${c.commit.message} _(${c.commit.author?.name || 'Dev'})_`).join('\n');
+      await sendTelegram(chatId, `🚀 *Recent Commits in \`${currentRepo}\`:*\n\n${list}`, MAIN_KEYBOARD);
     } else {
-      await sendTelegram(chatId, `⚠️ Could not fetch commits: HTTP ${ghRes.status}`, MAIN_KEYBOARD);
+      await sendTelegram(chatId, `⚠️ Could not fetch commits for \`${currentRepo}\`: HTTP ${ghRes.status}`, MAIN_KEYBOARD);
     }
     return { statusCode: 200, body: 'ok' };
   }
 
-  // 5. 🧠 Natural Language Code Changes (Autonomous Cloud Agent)
-  await sendTelegram(chatId, `⚡ *Task Received:* "${text}"\n\n🧠 Cloud JARVIS is analyzing repository files and writing code changes...`, MAIN_KEYBOARD);
+  // 6. 🧠 Mini-Antigravity AI: Autonomous Multi-Repo Code Changes
+  await sendTelegram(chatId, `⚡ *Task Received:* "${text}"\n\n🧠 Cloud JARVIS is inspecting repository \`${currentRepo}\` and writing code...`, MAIN_KEYBOARD);
 
   try {
-    // Step A: Determine target file
-    const plannerPrompt = `You are JARVIS, an autonomous AI web developer.
-The user wants to make this change to their website: "${text}".
-The repository contains the following files:
-- index.html (Main landing page, hero, countdown, banners)
-- css/style.css (Main styles, colors, animations)
-- js/main.js (Countdown timer logic, sound, interactive features)
-- includes/header.php
-- includes/hero.php
+    // Step A: Inspect the file tree of the active repository
+    let defaultBranch = 'main';
+    let treeRes = await githubRequest(`/repos/${currentRepo}/git/trees/${defaultBranch}?recursive=1`);
+    if (treeRes.status !== 200) {
+      defaultBranch = 'master';
+      treeRes = await githubRequest(`/repos/${currentRepo}/git/trees/${defaultBranch}?recursive=1`);
+    }
 
-Respond with ONLY the exact relative path of the single file that should be modified (e.g. "index.html" or "css/style.css" or "js/main.js"). Do not explain.`;
+    let fileList = [];
+    if (treeRes.status === 200 && treeRes.data && Array.isArray(treeRes.data.tree)) {
+      fileList = treeRes.data.tree
+        .filter(item => item.type === 'blob' && !item.path.startsWith('.') && !item.path.includes('node_modules'))
+        .map(item => item.path);
+    }
+
+    // Step B: Ask Gemini which file should be modified
+    const plannerPrompt = `You are JARVIS, an autonomous AI web developer.
+The user wants to make this change in repository "${currentRepo}": "${text}".
+Here are the files available in this repository:
+${fileList.slice(0, 40).map(f => '- ' + f).join('\n')}
+
+Respond with ONLY the exact relative path of the single file that should be modified. Do not explain.`;
 
     let targetFile = await callGemini(plannerPrompt);
     if (targetFile) {
       targetFile = targetFile.replace(/[`"'\n\r]/g, '').trim();
     }
-    if (!targetFile || targetFile.includes(' ')) {
-      targetFile = 'index.html'; // default fallback
+    if (!targetFile || targetFile.includes(' ') || !fileList.includes(targetFile)) {
+      targetFile = fileList.find(f => f.endsWith('index.html') || f.endsWith('README.md') || f.endsWith('index.php')) || fileList[0] || 'README.md';
     }
 
-    // Step B: Fetch current file content from GitHub
-    const fileRes = await githubRequest(`/repos/${GITHUB_REPO}/contents/${targetFile}`);
+    // Step C: Fetch current file content from GitHub
+    const fileRes = await githubRequest(`/repos/${currentRepo}/contents/${targetFile}`);
     if (fileRes.status !== 200 || !fileRes.data || !fileRes.data.content) {
-      await sendTelegram(chatId, `⚠️ Could not read file \`${targetFile}\` from GitHub repository.`, MAIN_KEYBOARD);
+      await sendTelegram(chatId, `⚠️ Could not read file \`${targetFile}\` from repository \`${currentRepo}\`.`, MAIN_KEYBOARD);
       return { statusCode: 200, body: 'ok' };
     }
 
     const currentContent = Buffer.from(fileRes.data.content, 'base64').toString('utf-8');
     const fileSha = fileRes.data.sha;
 
-    // Step C: Ask Gemini to generate the updated code
-    const coderPrompt = `You are JARVIS, an expert senior web developer.
+    // Step D: Gemini generates the updated code
+    const coderPrompt = `You are JARVIS, an expert senior developer.
 The user wants to make this change: "${text}".
 
 Here is the current content of "${targetFile}":
@@ -269,28 +376,29 @@ Return the COMPLETE updated file content. Do NOT include markdown code fences (n
       return { statusCode: 200, body: 'ok' };
     }
 
-    // Clean any accidental markdown fence at start/end
+    // Clean any accidental markdown fence
     updatedContent = updatedContent.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '');
 
-    // Step D: Commit the new content directly to GitHub
-    const commitRes = await githubRequest(`/repos/${GITHUB_REPO}/contents/${targetFile}`, 'PUT', {
+    // Step E: Commit and push the new content to GitHub
+    const commitRes = await githubRequest(`/repos/${currentRepo}/contents/${targetFile}`, 'PUT', {
       message: `Cloud JARVIS: ${text.slice(0, 70)}`,
       content: Buffer.from(updatedContent).toString('base64'),
-      sha: fileSha
+      sha: fileSha,
+      branch: defaultBranch
     });
 
     if (commitRes.status === 200 || commitRes.status === 201) {
       const commitSha = commitRes.data.commit?.sha?.slice(0, 7) || 'latest';
+      const isSiteRepo = currentRepo.includes('avengers');
+      const liveNote = isSiteRepo ? '\n🚀 *Live Netlify Site:* https://avengers-doomsday-countdown-pmk3.netlify.app' : '';
+
       const successMsg = `🎉 *Task Completed & Pushed!*
 
+📂 *Repository:* \`${currentRepo}\`
 📄 *Modified:* \`${targetFile}\`
-📌 *Commit:* \`${commitSha}\` - "Cloud JARVIS: ${text.slice(0, 50)}"
-🚀 *Netlify Deploy:* Building live automatically!
+📌 *Commit:* \`${commitSha}\` - "Cloud JARVIS: ${text.slice(0, 50)}"${liveNote}
 
-🌐 *View Live Site:*
-https://avengers-doomsday-countdown-pmk3.netlify.app
-
-💡 _When you get back to your laptop, just run \`git pull\` to download these changes!_`;
+💡 _Your changes are permanently saved in GitHub!_`;
 
       await sendTelegram(chatId, successMsg, MAIN_KEYBOARD);
     } else {
