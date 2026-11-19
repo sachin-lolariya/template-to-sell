@@ -304,8 +304,15 @@ Respond with ONLY a JSON array containing 3 objects:
   const rawJson = await callGemini(brainstormPrompt, true);
   let ideas = [];
   try {
-    ideas = JSON.parse(rawJson);
-  } catch (e) {
+    const parsed = JSON.parse(rawJson);
+    if (Array.isArray(parsed)) {
+      ideas = parsed;
+    } else if (parsed && Array.isArray(parsed.ideas)) {
+      ideas = parsed.ideas;
+    }
+  } catch (e) {}
+
+  if (!Array.isArray(ideas) || ideas.length === 0) {
     ideas = [
       { id: 1, title: '✨ Cyber Glow Effects', description: 'Add dynamic glowing neon borders and audio pulse effects to the countdown units.', instruction: 'Add glowing neon border pulse and sound FX to timer units in index.html and style.css' },
       { id: 2, title: '🎬 Background Video HUD', description: 'Integrate a high-tech HUD overlay on the background trailer video.', instruction: 'Add futuristic sci-fi HUD scanlines overlay over the hero banner video in style.css' },
@@ -318,7 +325,7 @@ Respond with ONLY a JSON array containing 3 objects:
 
   // Format Telegram message with Inline Action Buttons
   const buttons = ideas.slice(0, 3).map((idea, idx) => [{
-    text: `🔨 Build #${idx + 1}: ${idea.title.slice(0, 24)}`,
+    text: `🔨 Build #${idx + 1}: ${(idea.title || 'Feature').slice(0, 24)}`,
     callback_data: `build_idea:${idx + 1}`
   }]);
   buttons.push([{ text: '🔄 Brainstorm Again', callback_data: 'think_again' }]);
@@ -386,11 +393,14 @@ Respond with ONLY a JSON object:
   const planRaw = await callGemini(plannerPrompt, true);
   let planObj = { summary: taskPrompt, files: [] };
   try {
-    planObj = JSON.parse(planRaw);
-  } catch (e) {
-    const defaultTarget = fileList.find(f => f.endsWith('index.html') || f.endsWith('README.md')) || fileList[0] || 'README.md';
-    planObj = { summary: taskPrompt, files: [{ path: defaultTarget, action: 'modify', role: 'Implement request' }] };
-  }
+    const parsed = JSON.parse(planRaw);
+    if (parsed && typeof parsed === 'object') {
+      planObj = {
+        summary: parsed.summary || taskPrompt,
+        files: Array.isArray(parsed.files) ? parsed.files : []
+      };
+    }
+  } catch (e) {}
 
   if (!planObj.files || planObj.files.length === 0) {
     const defaultTarget = fileList.find(f => f.endsWith('index.html') || f.endsWith('README.md')) || fileList[0] || 'README.md';
