@@ -9,7 +9,7 @@
 
 [[redirects]]
   from = "/api/jarvis"
-  to = "/.netlify/functions/jarvis"
+  to = "/.netlify/functions/jarvis-background"
   status = 200
 
 [[headers]]
