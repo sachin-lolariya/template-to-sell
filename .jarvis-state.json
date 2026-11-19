@@ -5,22 +5,22 @@
   "lastIdeas": [
     {
       "id": 1,
-      "title": "✨ Cyber Glow Effects",
-      "description": "Add dynamic glowing neon borders and audio pulse effects to the countdown units.",
-      "instruction": "Add glowing neon border pulse and sound FX to timer units in index.html and style.css"
+      "title": "🧠 Neural Doom Matrix",
+      "description": "An interactive WebGL reality-fracture particle mesh on the canvas that reacts to mouse velocity and audio frequencies from the trailer.",
+      "instruction": "Create `js/doom-matrix.js` using Three.js or custom canvas shaders, initializing a glowing green quantum grid that distorts during countdown digit changes and integrates with `js/main.js`."
     },
     {
       "id": 2,
-      "title": "🎬 Background Video HUD",
-      "description": "Integrate a high-tech HUD overlay on the background trailer video.",
-      "instruction": "Add futuristic sci-fi HUD scanlines overlay over the hero banner video in style.css"
+      "title": "🔊 Multiversal Audio Sfx",
+      "description": "A synthesized Web Audio API soundscape that generates low-frequency cinematic drones and subtle mechanical UI ticks without heavy external assets.",
+      "instruction": "Implement `js/audio-engine.js` with procedural oscillators and gain nodes triggered on button hovers, countdown milestones, and chat messages, toggleable via an audio HUD button in `includes/header.php`."
     },
     {
       "id": 3,
-      "title": "💬 Sound & Voice Toggles",
-      "description": "Add an interactive Stark voice alert toggle when the countdown passes milestones.",
-      "instruction": "Add audio chime sound alerts on live timer countdown in js/main.js"
+      "title": "⚡ Quantum Variant Radar",
+      "description": "A live global telemetry map showing visitor countdown activity nodes worldwide with simulated multiverse breach coordinates.",
+      "instruction": "Build `includes/radar.php` and `js/radar.js` displaying an SVG world map with pulse markers representing active countdown viewers fetched via Netlify functions."
     }
   ],
-  "updatedAt": "2026-11-19T17:33:38.606Z"
+  "updatedAt": "2026-11-19T17:40:08.817Z"
 }
