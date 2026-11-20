@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * UPDRAFT // HIGH-CONVERTING SOCIAL MEDIA & CREATIVE STUDIO TEMPLATE
+ * AETHER ATELIER // HIGH-CONVERTING SOCIAL MEDIA & CREATIVE STUDIO TEMPLATE
  * Complete Production Script: GSAP 3 Animations, Interactive Filters,
  * Hot Take Generator, Interactive DM FAQ, Mobile Drawer, and Lead Integration
  * ============================================================================
@@ -515,9 +515,9 @@ document.addEventListener("DOMContentLoaded", () => {
       schedule: [
         { day: "Mon", tag: "Carousel", tagBg: "bg-ink text-cream", title: "Five ways to wear one coat, ranked by our intern", time: "12:30" },
         { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "Poll: cuffs rolled or down?", time: "08:15" },
-        { day: "Wed", tag: "Reel", tagBg: "bg-ember text-ink", title: "The coat, ten years later", time: "18:42" },
+        { day: "Wed", tag: "Reel", tagBg: "bg-ember text-white", title: "The coat, ten years later", time: "18:42" },
         { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "Wearer of the week: Priya in Leeds", time: "13:00" },
-        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-ink", title: "Packing for a weekend in one bag", time: "17:20" },
+        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-white", title: "Packing for a weekend in one bag", time: "17:20" },
         { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Studio sale, open the boxes with us", time: "11:00" },
         { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Repair clinic questions, answered", time: "19:30" }
       ]
@@ -526,11 +526,11 @@ document.addEventListener("DOMContentLoaded", () => {
       title: "Food, next week",
       tip: "Tip: Fri at 19:15 is dinner rush. That is when we drop the kitchen prep video.",
       schedule: [
-        { day: "Mon", tag: "Reel", tagBg: "bg-ember text-ink", title: "The sourdough starter, day 14 progress", time: "09:00" },
+        { day: "Mon", tag: "Reel", tagBg: "bg-ember text-white", title: "The sourdough starter, day 14 progress", time: "09:00" },
         { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "Blind taste test: cheap vs heirloom olive oil", time: "11:30" },
         { day: "Wed", tag: "Carousel", tagBg: "bg-ink text-cream", title: "How to reheat pizza without rubber crust", time: "14:00" },
         { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "The burnt Basque cheesecake fresh from oven", time: "15:45" },
-        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-ink", title: "Friday night service: 45 tickets in 8 minutes", time: "19:15" },
+        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-white", title: "Friday night service: 45 tickets in 8 minutes", time: "19:15" },
         { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Morning farmer market walk with Chef Marco", time: "08:30" },
         { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Sunday roast prep checklist & wine pairing", time: "17:00" }
       ]
@@ -540,10 +540,10 @@ document.addEventListener("DOMContentLoaded", () => {
       tip: "Tip: Tue at 10:00 is when founders check feeds. That is where we drop the teardown.",
       schedule: [
         { day: "Mon", tag: "Carousel", tagBg: "bg-ink text-cream", title: "The 3 onboarding mistakes killing SaaS activation", time: "10:00" },
-        { day: "Tue", tag: "Reel", tagBg: "bg-ember text-ink", title: "Founder breaks down the bug that melted prod", time: "14:20" },
-        { day: "Wed", tag: "Shorts", tagBg: "bg-ember text-ink", title: "12-second UI micro-interaction breakdown", time: "11:00" },
+        { day: "Tue", tag: "Reel", tagBg: "bg-ember text-white", title: "Founder breaks down the bug that melted prod", time: "14:20" },
+        { day: "Wed", tag: "Shorts", tagBg: "bg-ember text-white", title: "12-second UI micro-interaction breakdown", time: "11:00" },
         { day: "Thu", tag: "Post", tagBg: "bg-sand text-ink", title: "Why we deleted our AI feature after 14 days", time: "09:30" },
-        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-ink", title: "Inside our real revenue dashboard: $52k MRR", time: "16:00" },
+        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-white", title: "Inside our real revenue dashboard: $52k MRR", time: "16:00" },
         { day: "Sat", tag: "Story", tagBg: "bg-butter text-ink", title: "Weekend hackathon poll: what should we ship?", time: "12:00" },
         { day: "Sun", tag: "Carousel", tagBg: "bg-ink text-cream", title: "7 open-source tools our engineers swear by", time: "18:00" }
       ]
@@ -552,11 +552,11 @@ document.addEventListener("DOMContentLoaded", () => {
       title: "Beauty, next week",
       tip: "Tip: Sun at 20:00 is nighttime ritual scroll. Perfect for raw texture demos.",
       schedule: [
-        { day: "Mon", tag: "Reel", tagBg: "bg-ember text-ink", title: "Skin texture in 4K: why we banned blur filters", time: "08:45" },
+        { day: "Mon", tag: "Reel", tagBg: "bg-ember text-white", title: "Skin texture in 4K: why we banned blur filters", time: "08:45" },
         { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "AM vs PM routine order: what goes first?", time: "09:15" },
         { day: "Wed", tag: "Carousel", tagBg: "bg-ink text-cream", title: "The 3 ingredients backed by clinical peer review", time: "13:30" },
         { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "Batch 04 bottle design with weighted glass", time: "16:00" },
-        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-ink", title: "5-minute commute makeup: real sunlight test", time: "17:45" },
+        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-white", title: "5-minute commute makeup: real sunlight test", time: "17:45" },
         { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Derm Q&A: what to use when your skin barrier stings", time: "11:30" },
         { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Sunday reset: wash your makeup brushes with us", time: "20:00" }
       ]
@@ -565,11 +565,11 @@ document.addEventListener("DOMContentLoaded", () => {
       title: "Fitness, next week",
       tip: "Tip: Mon at 06:30 is high motivation hour. Drop the form breakdown here.",
       schedule: [
-        { day: "Mon", tag: "Reel", tagBg: "bg-ember text-ink", title: "Stop doing squats like this: 2-degree hip fix", time: "06:30" },
+        { day: "Mon", tag: "Reel", tagBg: "bg-ember text-white", title: "Stop doing squats like this: 2-degree hip fix", time: "06:30" },
         { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "Quick vote: high bar or low bar for mobility?", time: "08:00" },
         { day: "Wed", tag: "Carousel", tagBg: "bg-ink text-cream", title: "Five shoulder warmups for people at desks", time: "12:15" },
         { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "Client progression: 6 months of consistency", time: "15:00" },
-        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-ink", title: "The workout you do when you have 22 minutes", time: "17:30" },
+        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-white", title: "The workout you do when you have 22 minutes", time: "17:30" },
         { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Saturday morning deadlift form clinic", time: "09:00" },
         { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Recovery Sunday: 10-minute hip opening sequence", time: "18:45" }
       ]
@@ -580,9 +580,9 @@ document.addEventListener("DOMContentLoaded", () => {
       schedule: [
         { day: "Mon", tag: "Carousel", tagBg: "bg-ink text-cream", title: "A quiet morning in Lisbon: 8 35mm film frames", time: "08:30" },
         { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "Which desk setup feels calmer to work from?", time: "10:15" },
-        { day: "Wed", tag: "Reel", tagBg: "bg-ember text-ink", title: "Building a ceramic mug from raw clay to kiln", time: "14:45" },
+        { day: "Wed", tag: "Reel", tagBg: "bg-ember text-white", title: "Building a ceramic mug from raw clay to kiln", time: "14:45" },
         { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "Late afternoon light through linen curtains", time: "21:00" },
-        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-ink", title: "Pack with me for 48 hours in Kyoto with one tote", time: "16:30" },
+        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-white", title: "Pack with me for 48 hours in Kyoto with one tote", time: "16:30" },
         { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Studio coffee brew and soundtrack listening", time: "10:00" },
         { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Books we finished this month with one-line notes", time: "19:15" }
       ]
@@ -890,5 +890,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  console.log("Updraft Studio Controller Initialized Successfully.");
+  console.log("Aether Atelier Controller Initialized Successfully.");
 });
