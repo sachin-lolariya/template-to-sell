@@ -504,5 +504,175 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  
+  // --------------------------------------------------------------------------
+  // 8. POST TIME MACHINE INTERACTIVE CONTROLLER (#post-time-machine)
+  // --------------------------------------------------------------------------
+  const postTimeMachineData = {
+    fashion: {
+      title: "Fashion, next week",
+      tip: "Tip: Wed at 18:42 is quiet in your category. That is where we would put the big one.",
+      schedule: [
+        { day: "Mon", tag: "Carousel", tagBg: "bg-ink text-cream", title: "Five ways to wear one coat, ranked by our intern", time: "12:30" },
+        { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "Poll: cuffs rolled or down?", time: "08:15" },
+        { day: "Wed", tag: "Reel", tagBg: "bg-ember text-ink", title: "The coat, ten years later", time: "18:42" },
+        { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "Wearer of the week: Priya in Leeds", time: "13:00" },
+        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-ink", title: "Packing for a weekend in one bag", time: "17:20" },
+        { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Studio sale, open the boxes with us", time: "11:00" },
+        { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Repair clinic questions, answered", time: "19:30" }
+      ]
+    },
+    food: {
+      title: "Food, next week",
+      tip: "Tip: Fri at 19:15 is dinner rush. That is when we drop the kitchen prep video.",
+      schedule: [
+        { day: "Mon", tag: "Reel", tagBg: "bg-ember text-ink", title: "The sourdough starter, day 14 progress", time: "09:00" },
+        { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "Blind taste test: cheap vs heirloom olive oil", time: "11:30" },
+        { day: "Wed", tag: "Carousel", tagBg: "bg-ink text-cream", title: "How to reheat pizza without rubber crust", time: "14:00" },
+        { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "The burnt Basque cheesecake fresh from oven", time: "15:45" },
+        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-ink", title: "Friday night service: 45 tickets in 8 minutes", time: "19:15" },
+        { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Morning farmer market walk with Chef Marco", time: "08:30" },
+        { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Sunday roast prep checklist & wine pairing", time: "17:00" }
+      ]
+    },
+    tech: {
+      title: "Tech, next week",
+      tip: "Tip: Tue at 10:00 is when founders check feeds. That is where we drop the teardown.",
+      schedule: [
+        { day: "Mon", tag: "Carousel", tagBg: "bg-ink text-cream", title: "The 3 onboarding mistakes killing SaaS activation", time: "10:00" },
+        { day: "Tue", tag: "Reel", tagBg: "bg-ember text-ink", title: "Founder breaks down the bug that melted prod", time: "14:20" },
+        { day: "Wed", tag: "Shorts", tagBg: "bg-ember text-ink", title: "12-second UI micro-interaction breakdown", time: "11:00" },
+        { day: "Thu", tag: "Post", tagBg: "bg-sand text-ink", title: "Why we deleted our AI feature after 14 days", time: "09:30" },
+        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-ink", title: "Inside our real revenue dashboard: $52k MRR", time: "16:00" },
+        { day: "Sat", tag: "Story", tagBg: "bg-butter text-ink", title: "Weekend hackathon poll: what should we ship?", time: "12:00" },
+        { day: "Sun", tag: "Carousel", tagBg: "bg-ink text-cream", title: "7 open-source tools our engineers swear by", time: "18:00" }
+      ]
+    },
+    beauty: {
+      title: "Beauty, next week",
+      tip: "Tip: Sun at 20:00 is nighttime ritual scroll. Perfect for raw texture demos.",
+      schedule: [
+        { day: "Mon", tag: "Reel", tagBg: "bg-ember text-ink", title: "Skin texture in 4K: why we banned blur filters", time: "08:45" },
+        { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "AM vs PM routine order: what goes first?", time: "09:15" },
+        { day: "Wed", tag: "Carousel", tagBg: "bg-ink text-cream", title: "The 3 ingredients backed by clinical peer review", time: "13:30" },
+        { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "Batch 04 bottle design with weighted glass", time: "16:00" },
+        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-ink", title: "5-minute commute makeup: real sunlight test", time: "17:45" },
+        { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Derm Q&A: what to use when your skin barrier stings", time: "11:30" },
+        { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Sunday reset: wash your makeup brushes with us", time: "20:00" }
+      ]
+    },
+    fitness: {
+      title: "Fitness, next week",
+      tip: "Tip: Mon at 06:30 is high motivation hour. Drop the form breakdown here.",
+      schedule: [
+        { day: "Mon", tag: "Reel", tagBg: "bg-ember text-ink", title: "Stop doing squats like this: 2-degree hip fix", time: "06:30" },
+        { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "Quick vote: high bar or low bar for mobility?", time: "08:00" },
+        { day: "Wed", tag: "Carousel", tagBg: "bg-ink text-cream", title: "Five shoulder warmups for people at desks", time: "12:15" },
+        { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "Client progression: 6 months of consistency", time: "15:00" },
+        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-ink", title: "The workout you do when you have 22 minutes", time: "17:30" },
+        { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Saturday morning deadlift form clinic", time: "09:00" },
+        { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Recovery Sunday: 10-minute hip opening sequence", time: "18:45" }
+      ]
+    },
+    lifestyle: {
+      title: "Lifestyle, next week",
+      tip: "Tip: Thu at 21:00 is decompression scroll. Best for narrative photo essays.",
+      schedule: [
+        { day: "Mon", tag: "Carousel", tagBg: "bg-ink text-cream", title: "A quiet morning in Lisbon: 8 35mm film frames", time: "08:30" },
+        { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "Which desk setup feels calmer to work from?", time: "10:15" },
+        { day: "Wed", tag: "Reel", tagBg: "bg-ember text-ink", title: "Building a ceramic mug from raw clay to kiln", time: "14:45" },
+        { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "Late afternoon light through linen curtains", time: "21:00" },
+        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-ink", title: "Pack with me for 48 hours in Kyoto with one tote", time: "16:30" },
+        { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Studio coffee brew and soundtrack listening", time: "10:00" },
+        { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Books we finished this month with one-line notes", time: "19:15" }
+      ]
+    }
+  };
+
+  const tmSection = document.getElementById("post-time-machine");
+  if (tmSection) {
+    const industryButtons = tmSection.querySelectorAll('[role="radio"]');
+    const phoneTitle = document.getElementById("phone-title");
+    const phoneProgress = document.getElementById("phone-progress");
+    const phoneList = document.getElementById("phone-list");
+    const industryTip = document.getElementById("industry-tip");
+    const replayBtn = tmSection.querySelector("button:has(svg.lucide-rotate-ccw), button.mt-6");
+
+    function renderTimeMachine(industryKey, animate = true) {
+      const data = postTimeMachineData[industryKey] || postTimeMachineData.fashion;
+
+      if (phoneTitle) phoneTitle.textContent = data.title;
+      if (industryTip) industryTip.textContent = data.tip;
+
+      if (phoneList) {
+        phoneList.innerHTML = data.schedule.map((item) => `
+          <li class="flex items-start gap-2.5 rounded-xl border border-ink/[0.07] bg-cream/70 px-2.5 py-2">
+            <span class="w-8 shrink-0 pt-0.5 font-mono text-[10px] font-medium uppercase text-stone">${item.day}</span>
+            <span class="min-w-0 flex-1">
+              <span class="inline-block rounded-full px-1.5 py-px font-mono text-[9px] uppercase tracking-[0.08em] ${item.tagBg}">${item.tag}</span>
+              <span class="mt-0.5 block truncate text-[12px] font-medium leading-snug">${item.title}</span>
+            </span>
+            <span class="inline-flex shrink-0 items-center gap-1 pt-0.5 font-mono text-[10px] text-ink/70">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock3 size-3">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16.5 12"></polyline>
+              </svg>
+              ${item.time}
+            </span>
+          </li>
+        `).join("");
+
+        if (animate && typeof gsap !== "undefined") {
+          gsap.fromTo(phoneList.children, 
+            { opacity: 0, x: 20 },
+            { opacity: 1, x: 0, stagger: 0.05, duration: 0.3, ease: "power2.out" }
+          );
+        }
+      }
+
+      if (phoneProgress) {
+        if (animate && typeof gsap !== "undefined") {
+          gsap.fromTo(phoneProgress, { width: "0%" }, { width: "100%", duration: 0.6, ease: "power1.inOut" });
+        } else {
+          phoneProgress.style.width = "100%";
+        }
+      }
+    }
+
+    industryButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.textContent.trim().toLowerCase();
+        if (postTimeMachineData[key]) {
+          industryButtons.forEach((b) => {
+            b.setAttribute("aria-checked", "false");
+            b.classList.remove("border-ember", "bg-ember", "text-ink");
+            b.classList.add("border-cream/20", "text-cream");
+          });
+
+          btn.setAttribute("aria-checked", "true");
+          btn.classList.remove("border-cream/20", "text-cream");
+          btn.classList.add("border-ember", "bg-ember", "text-ink");
+
+          renderTimeMachine(key, true);
+        }
+      });
+    });
+
+    if (replayBtn) {
+      replayBtn.addEventListener("click", () => {
+        const activeBtn = tmSection.querySelector('[role="radio"][aria-checked="true"]') || industryButtons[0];
+        const key = activeBtn ? activeBtn.textContent.trim().toLowerCase() : "fashion";
+        if (typeof gsap !== "undefined") {
+          const icon = replayBtn.querySelector("svg");
+          if (icon) gsap.fromTo(icon, { rotate: 0 }, { rotate: -360, duration: 0.5, ease: "power2.out" });
+        }
+        renderTimeMachine(key, true);
+      });
+    }
+
+    // Ensure initial render is populated with progress at 100%
+    renderTimeMachine("fashion", false);
+  }
+
   console.log("Updraft Studio Controller Initialized Successfully.");
 });
