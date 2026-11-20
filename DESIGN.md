@@ -16,15 +16,15 @@ A commercial-grade, luxury editorial design system built for high-conversion cre
 
 | Role | Token Variable | Hex Code | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Primary Canvas** | `--cream` | `#FAF8F5` | Warm alabaster silk background. Sets editorial warmth. |
-| **Surface Paper** | `--paper` | `#FFFFFF` | Pure studio white for elevated cards and message panels. |
-| **Secondary Tint** | `--sand` | `#F3EFEA` | Warm cashmere / oat for active states and accent cards. |
-| **Deep Obsidian** | `--ink` | `#111215` | High-contrast obsidian charcoal for typography and buttons. |
-| **Radiant Vermilion** | `--accent-coral` | `#FF4A1C` | Signature high-energy primary accent for CTAs and highlights. |
-| **Electric Citron** | `--accent-citron` | `#D9FE38` | High-voltage neon citron for status badges and live indicators. |
-| **Royal Cobalt** | `--accent-cobalt` | `#1E3A8A` | Professional B2B depth for LinkedIn teardowns. |
-| **Editorial Stone** | `--stone` | `#68655F` | Balanced neutral for metadata, timestamps, and muted text. |
-| **Hairline Border** | `--border-hairline` | `rgba(17,18,21,0.08)` | Ultra-delicate 1px boundary dividing cards and tabs. |
+| **Primary Canvas** | `--cream` | `#F8FAFC` | Clean platinum alabaster canvas. Modern, ultra-refined editorial feel. |
+| **Surface Paper** | `--paper` | `#FFFFFF` | Crisp pure white for elevated cards and message panels. |
+| **Secondary Tint** | `--sand` | `#EEF2F6` | Cool slate mist for active states, borders, and subtle card surfaces. |
+| **Deep Obsidian** | `--ink` | `#0A0D14` | Ultra-deep obsidian black for high-contrast typography and buttons. |
+| **Electric Cobalt** | `--ember` / `--accent-blue` | `#2563EB` | Signature high-voltage Electric Royal Cobalt for primary buttons and links. |
+| **Acid Citron** | `--butter` / `--accent-citron` | `#D9FE38` | Neon citron highlight for high-impact editorial callouts and badges. |
+| **Deep Royal** | `--accent-cobalt` | `#1D4ED8` | Rich deep cobalt for hover states and secondary telemetry badges. |
+| **Editorial Stone** | `--stone` | `#64748B` | Balanced slate grey for metadata, timestamps, and muted text. |
+| **Hairline Border** | `--border-hairline` | `rgba(10,13,20,0.08)` | Ultra-delicate 1px boundary dividing cards and tabs. |
 
 ---
 

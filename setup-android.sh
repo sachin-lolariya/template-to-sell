@@ -13,8 +13,8 @@ pkg update -y && pkg upgrade -y
 echo -e "\e[34m[*] Step 2/3: Installing Node.js and Termux API tools...\e[0m"
 pkg install -y nodejs termux-api curl
 
-echo -e "\e[34m[*] Step 3/3: Downloading JARVIS Mobile Client...\e[0m"
-curl -sL "https://avengers-doomsday-countdown-pmk3.netlify.app/jarvis-client.js" -o ~/jarvis-client.js
+echo -e "\e[34m[*] Step 3/3: Downloading JARVIS Mobile Client from GitHub...\e[0m"
+curl -sL "https://raw.githubusercontent.com/sachin-lolariya/template-to-sell/main/jarvis-client.js" -o ~/jarvis-client.js
 chmod +x ~/jarvis-client.js
 
 echo -e "\n\e[32m[✔] J.A.R.V.I.S. MOBILE NODE INSTALLED SUCCESSFULLY!\e[0m"
