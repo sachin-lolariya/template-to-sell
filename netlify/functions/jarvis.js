@@ -4,7 +4,7 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ALLOWED_CHAT_ID = process.env.ALLOWED_CHAT_ID;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const STATE_REPO = process.env.GITHUB_REPO || 'sachin-lolariya/template-to-sell';
+const STATE_REPO = 'sachin-lolariya/template-to-sell';
 const STATE_FILE = '.jarvis-state.json';
 const LIVE_SITE_URL = 'https://avengers-doomsday-countdown-pmk3.netlify.app';
 
