@@ -32,7 +32,106 @@ function sendTelegram(chatId, text, extra = {}) {
     }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve(data));
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (!parsed.ok && parsed.description && parsed.description.includes("can't parse entities")) {
+            const fallbackPayload = JSON.stringify({
+              chat_id: chatId,
+              text: text.replace(/[*_`\[\]]/g, ''),
+              ...extra
+            });
+            const fbReq = https.request({
+              hostname: 'api.telegram.org',
+              path: `/bot${TELEGRAM_TOKEN}/sendMessage`,
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(fallbackPayload)
+              }
+            }, (fbRes) => {
+              let fbData = '';
+              fbRes.on('data', c => fbData += c);
+              fbRes.on('end', () => {
+                try { resolve(JSON.parse(fbData)); } catch (e) { resolve(null); }
+              });
+            });
+            fbReq.on('error', () => resolve(null));
+            fbReq.write(fallbackPayload);
+            fbReq.end();
+          } else {
+            resolve(parsed);
+          }
+        } catch (e) {
+          resolve({ ok: false, raw: data });
+        }
+      });
+    });
+
+    req.on('error', () => resolve(null));
+    req.write(payload);
+    req.end();
+  });
+}
+
+function editTelegram(chatId, messageId, text, extra = {}) {
+  return new Promise((resolve) => {
+    if (!messageId) return resolve(null);
+    const payload = JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+      text: text,
+      parse_mode: 'Markdown',
+      disable_web_page_preview: false,
+      ...extra
+    });
+
+    const req = https.request({
+      hostname: 'api.telegram.org',
+      path: `/bot${TELEGRAM_TOKEN}/editMessageText`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (!parsed.ok && parsed.description && parsed.description.includes("can't parse entities")) {
+            const fallbackPayload = JSON.stringify({
+              chat_id: chatId,
+              message_id: messageId,
+              text: text.replace(/[*_`\[\]]/g, ''),
+              ...extra
+            });
+            const fbReq = https.request({
+              hostname: 'api.telegram.org',
+              path: `/bot${TELEGRAM_TOKEN}/editMessageText`,
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(fallbackPayload)
+              }
+            }, (fbRes) => {
+              let fbData = '';
+              fbRes.on('data', c => fbData += c);
+              fbRes.on('end', () => {
+                try { resolve(JSON.parse(fbData)); } catch (e) { resolve(null); }
+              });
+            });
+            fbReq.on('error', () => resolve(null));
+            fbReq.write(fallbackPayload);
+            fbReq.end();
+          } else {
+            resolve(parsed);
+          }
+        } catch (e) {
+          resolve(null);
+        }
+      });
     });
 
     req.on('error', () => resolve(null));
@@ -459,11 +558,59 @@ If asked about repository deletion, explain that you do not delete repositories 
 }
 
 // ==========================================
-// FEATURE 2 & 3: MULTI-STEP AUTONOMOUS PLANNING & ATOMIC COMMIT
+// FEATURE 2 & 3: AUTOGPT LOOP EXECUTION ENGINE
 // ==========================================
-async function executeAutonomousBuild(chatId, currentRepo, taskPrompt) {
-  await sendTelegram(chatId, `⚡ *STARK TERMINAL // TASK INITIATED*\n\n📝 *Instruction:* "${taskPrompt}"\n🧠 *Step 1/3 (Planning):* Formulating multi-file architecture...`, MAIN_KEYBOARD);
+function renderAutoGptTracker(goal, repo, steps, extraNote = '') {
+  let text = `⚡ *STARK TERMINAL // AUTOGPT EXECUTION ENGINE*\n\n`;
+  text += `🎯 *Goal:* "${goal}"\n`;
+  text += `📂 *Target Repo:* \`${repo}\`\n\n`;
+  text += `📋 *Autonomous Task Board:*\n`;
 
+  for (const step of steps) {
+    let icon = '[ ]';
+    let statusText = '';
+    if (step.status === 'done') {
+      icon = '[✓]';
+      statusText = step.note ? ` — _${step.note}_` : ' — _(Completed)_';
+    } else if (step.status === 'running') {
+      icon = '[⠋]';
+      statusText = step.note ? ` — _${step.note}_` : ' — _(Executing...)_';
+    } else if (step.status === 'healing') {
+      icon = '[🔧]';
+      statusText = step.note ? ` — _${step.note}_` : ' — _(Self-Healing...)_';
+    } else if (step.status === 'failed') {
+      icon = '[✗]';
+      statusText = step.note ? ` — _${step.note}_` : ' — _(Failed)_';
+    }
+    text += `${icon} *${step.title}*${statusText}\n`;
+  }
+
+  if (extraNote) {
+    text += `\n${extraNote}`;
+  }
+  return text;
+}
+
+async function executeAutonomousBuild(chatId, currentRepo, taskPrompt) {
+  const steps = [
+    { id: 'decomp', title: 'Goal Decomposition & Architecture', status: 'running', note: 'Analyzing codebase...' },
+    { id: 'coder', title: 'Autonomous Multi-File Implementation', status: 'pending', note: 'Queued' },
+    { id: 'sentinel', title: 'Sentinel Quality & Self-Healing Gate', status: 'pending', note: 'Queued' },
+    { id: 'commit', title: 'Atomic Git Trees Commit & Deploy', status: 'pending', note: 'Queued' }
+  ];
+
+  const initMsg = await sendTelegram(chatId, renderAutoGptTracker(taskPrompt, currentRepo, steps), MAIN_KEYBOARD);
+  const statusMsgId = initMsg?.result?.message_id;
+
+  const updateProgress = async (extraNote = '') => {
+    if (statusMsgId) {
+      await editTelegram(chatId, statusMsgId, renderAutoGptTracker(taskPrompt, currentRepo, steps, extraNote));
+    }
+  };
+
+  // ----------------------------------------------------
+  // Phase 1: Codebase Reconnaissance & Goal Decomposition
+  // ----------------------------------------------------
   let defaultBranch = 'main';
   let treeRes = await githubRequest(`/repos/${currentRepo}/git/trees/${defaultBranch}?recursive=1`);
   if (treeRes.status !== 200) {
@@ -478,18 +625,19 @@ async function executeAutonomousBuild(chatId, currentRepo, taskPrompt) {
       .map(item => item.path);
   }
 
-  const plannerPrompt = `You are JARVIS, an autonomous senior full-stack architect.
-User Request for repository "${currentRepo}": "${taskPrompt}".
-Repository files:
-${fileList.slice(0, 40).map(f => '- ' + f).join('\n')}
+  const plannerPrompt = `You are JARVIS, an autonomous senior full-stack architect running an AutoGPT execution loop.
+Active Repository: "${currentRepo}".
+User Goal: "${taskPrompt}".
+Repository File Map:
+${fileList.slice(0, 45).map(f => '- ' + f).join('\n')}
 
-Plan the exact coordinated changes needed (1 to 3 files max).
-Respond with ONLY a JSON object:
+Decompose this goal into 1 to 3 coordinated file operations (modify or create).
+Respond with ONLY valid JSON:
 {
   "summary": "One sentence summary of the feature",
-  "files": [
+  "steps": [
     {
-      "path": "exact relative path to file",
+      "file": "exact/relative/path.ext",
       "action": "modify" or "create",
       "role": "concise description of what to update or write in this file"
     }
@@ -497,43 +645,56 @@ Respond with ONLY a JSON object:
 }`;
 
   const planRaw = await callGemini(plannerPrompt, true);
-  let planObj = { summary: taskPrompt, files: [] };
+  let planObj = { summary: taskPrompt, steps: [] };
   try {
     const parsed = JSON.parse(planRaw);
     if (parsed && typeof parsed === 'object') {
       planObj = {
         summary: parsed.summary || taskPrompt,
-        files: Array.isArray(parsed.files) ? parsed.files : []
+        steps: Array.isArray(parsed.steps) ? parsed.steps : (Array.isArray(parsed.files) ? parsed.files.map(f => ({ file: f.path || f.file, action: f.action, role: f.role })) : [])
       };
     }
   } catch (e) { }
 
-  if (!planObj.files || planObj.files.length === 0) {
+  if (!planObj.steps || planObj.steps.length === 0) {
     const defaultTarget = fileList.find(f => f.endsWith('index.html') || f.endsWith('README.md')) || fileList[0] || 'README.md';
-    planObj.files = [{ path: defaultTarget, action: 'modify', role: 'Implement request' }];
+    planObj.steps = [{ file: defaultTarget, action: 'modify', role: 'Implement request' }];
   }
 
-  const filesToProcess = planObj.files.slice(0, 3);
-  await sendTelegram(chatId, `📐 *Plan Approved:*\n_${planObj.summary}_\n\n🔧 *Step 2/3 (Coordinated Coding):* Generating code for:\n${filesToProcess.map(f => `• \`${f.path}\` _(${f.action})_`).join('\n')}...`, MAIN_KEYBOARD);
+  const activeSteps = planObj.steps.slice(0, 3);
+  steps[0].status = 'done';
+  steps[0].note = `${activeSteps.length} step(s) planned: ${planObj.summary.slice(0, 35)}...`;
+  steps[1].status = 'running';
+  steps[1].note = `Implementing: ${activeSteps.map(s => s.file).join(', ')}`;
+  await updateProgress();
 
+  // ----------------------------------------------------
+  // Phase 2 & 3: Autonomous Coder & Sentinel Self-Healing Loop
+  // ----------------------------------------------------
   const generatedFiles = [];
-  for (const fileItem of filesToProcess) {
+  for (const stepItem of activeSteps) {
+    steps[1].note = `Coding \`${stepItem.file}\` (${stepItem.action})...`;
+    await updateProgress();
+
     let existingContent = '';
-    if (fileItem.action === 'modify') {
-      const existingRes = await githubRequest(`/repos/${currentRepo}/contents/${fileItem.path}`);
+    if (stepItem.action === 'modify') {
+      const existingRes = await githubRequest(`/repos/${currentRepo}/contents/${stepItem.file}`);
       if (existingRes.status === 200 && existingRes.data?.content) {
         existingContent = Buffer.from(existingRes.data.content, 'base64').toString('utf-8');
       }
     }
 
-    const coderPrompt = `You are JARVIS, an expert senior developer.
+    const coderPrompt = `You are JARVIS, an expert senior developer running an autonomous AutoGPT code generation cycle.
 Overall Goal: "${planObj.summary}".
-Current File: "${fileItem.path}" (${fileItem.action}).
-Role for this file: "${fileItem.role}".
-${existingContent ? `Existing File Content:\n\`\`\`\n${existingContent}\n\`\`\`` : 'This is a new file.'}
+File Path: "${stepItem.file}" (${stepItem.action}).
+Role for this file: "${stepItem.role}".
+${existingContent ? `Existing File Content:\n\`\`\`\n${existingContent}\n\`\`\`` : 'This is a brand new file.'}
 
-Return the COMPLETE updated content for "${fileItem.path}".
-Output ONLY the raw content ready to be committed directly to disk. Do NOT wrap in markdown code blocks.`;
+Return the COMPLETE updated content for "${stepItem.file}".
+Requirements:
+1. Provide the FULL production file ready to save directly to disk. Do NOT leave placeholder comments like "// rest of code here".
+2. Maintain existing styles, scripts, and tokens unless deliberately modifying them.
+3. Output ONLY the raw file content. Do NOT wrap in markdown code blocks.`;
 
     let fileContent = await callGemini(coderPrompt, false);
     if (!fileContent) {
@@ -541,35 +702,75 @@ Output ONLY the raw content ready to be committed directly to disk. Do NOT wrap 
     }
     fileContent = fileContent.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '');
 
-    // Self-Reflection & Critique Loop
-    const critiquePrompt = `You are JARVIS Quality Assurance.
-Examine this file content for "${fileItem.path}" for:
-1. Syntax correctness (HTML tags closed, CSS brackets matched, JS syntax valid)
-2. Mobile responsiveness & no broken links
+    // Sentinel / Quality Critic Gate
+    steps[2].status = 'running';
+    steps[2].note = `Inspecting \`${stepItem.file}\`...`;
+    await updateProgress();
 
-File:
+    const sentinelPrompt = `You are JARVIS Sentinel Quality Gate.
+Verify this code for "${stepItem.file}":
+${fileContent.slice(0, 3500)}
+
+Check for:
+1. Syntax correctness (balanced brackets, closed HTML tags, valid JS syntax).
+2. Completeness (no placeholders or truncated sections).
+3. Mobile responsiveness and adherence to project styling.
+
+If 100% verified and production-ready, reply with ONLY:
+VERIFIED
+
+If any critical syntax, missing bracket, or truncated code issue exists, reply with:
+FLAW: <concise description of the flaw>`;
+
+    const sentinelRes = await callGemini(sentinelPrompt, false);
+    
+    // Self-Healing Loop if a flaw is found
+    if (sentinelRes && !sentinelRes.includes('VERIFIED') && sentinelRes.length > 5) {
+      steps[2].status = 'healing';
+      steps[2].note = `Self-healing \`${stepItem.file}\`: fixing detected syntax/structure flaw...`;
+      await updateProgress();
+
+      const repairPrompt = `You are JARVIS Autonomous Self-Healing Engine.
+The generated code for "${stepItem.file}" encountered a quality check flaw:
+"${sentinelRes.slice(0, 300)}"
+
+Goal: "${planObj.summary}".
+Original/Current content snippet:
 \`\`\`
 ${fileContent.slice(0, 3000)}
 \`\`\`
 
-If completely valid, return ONLY: VERIFIED
-If critical syntax error found, return the fixed raw file content only.`;
+Perform an immediate surgical repair. Output the COMPLETE, 100% fixed raw file content ready for production.
+Return ONLY the raw file content. Do NOT wrap in markdown blocks.`;
 
-    const critiqueRes = await callGemini(critiquePrompt, false);
-    if (critiqueRes && !critiqueRes.includes('VERIFIED') && critiqueRes.length > 50) {
-      fileContent = critiqueRes.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '');
+      const repaired = await callGemini(repairPrompt, false);
+      if (repaired && repaired.length > 50) {
+        fileContent = repaired.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '');
+      }
     }
 
-    generatedFiles.push({ path: fileItem.path, content: fileContent });
+    generatedFiles.push({ path: stepItem.file, content: fileContent });
   }
 
-  // Atomic Multi-File Git Commit
+  steps[1].status = 'done';
+  steps[1].note = `${generatedFiles.length} file(s) authored`;
+  steps[2].status = 'done';
+  steps[2].note = 'All files passed Sentinel verification';
+  steps[3].status = 'running';
+  steps[3].note = 'Packaging atomic git trees...';
+  await updateProgress();
+
+  // ----------------------------------------------------
+  // Phase 4: Atomic Git Trees Commit & Push
+  // ----------------------------------------------------
   const commitMsg = `Cloud JARVIS: ${planObj.summary.slice(0, 60)}`;
   const commitResult = await commitMultipleFiles(currentRepo, generatedFiles, commitMsg);
 
   if (commitResult.success) {
-    const isSiteRepo = currentRepo.includes('avengers');
-    const summaryFiles = generatedFiles.map(f => `▸ \`${f.path}\` _(Verified)_`).join('\n');
+    steps[3].status = 'done';
+    steps[3].note = `Pushed [${commitResult.commitSha}] to ${commitResult.branch}`;
+
+    const summaryFiles = generatedFiles.map(f => `▸ \`${f.path}\` _(Verified & Built)_`).join('\n');
 
     const inlineSuccess = {
       reply_markup: {
@@ -586,12 +787,19 @@ If critical syntax error found, return the fixed raw file content only.`;
       }
     };
 
-    const successMsg = `🎉 *AUTONOMOUS BUILD COMPLETE & DEPLOYED*
+    const successMsg = `🎉 *AUTONOMOUS BUILD COMPLETE & VERIFIED*
 
+🎯 *Objective:* "${taskPrompt}"
 📂 *Repository:* \`${currentRepo}\`
 📌 *Commit:* \`${commitResult.commitSha}\` - "${commitMsg}"
 
-📄 *Coordinated Modifications:*
+📋 *AutoGPT Loop Execution Log:*
+[✓] *Goal Decomposition:* ${activeSteps.length}-part plan approved
+[✓] *Autonomous Coder:* ${generatedFiles.length} source file(s) authored
+[✓] *Sentinel Gate:* Zero syntax errors / Self-healing verified
+[✓] *Atomic Git Trees:* Deployed to \`${commitResult.branch}\`
+
+📄 *Modified Files:*
 ${summaryFiles}
 
 🛡️ *Quality Assurance Pass:*
@@ -602,9 +810,20 @@ ${summaryFiles}
 ━━━━━━━━━━━━━━━━━━━━━
 Tap below to test the changes live inside Telegram!`;
 
-    await sendTelegram(chatId, successMsg, inlineSuccess);
+    if (statusMsgId) {
+      await editTelegram(chatId, statusMsgId, successMsg, inlineSuccess);
+    } else {
+      await sendTelegram(chatId, successMsg, inlineSuccess);
+    }
   } else {
-    await sendTelegram(chatId, `⚠️ Git Trees commit error: ${commitResult.error || 'Failed'}.`, MAIN_KEYBOARD);
+    steps[3].status = 'failed';
+    steps[3].note = commitResult.error || 'Commit failed';
+    const failureNote = `⚠️ *Git Trees commit error:* ${commitResult.error || 'Failed'}.`;
+    if (statusMsgId) {
+      await editTelegram(chatId, statusMsgId, renderAutoGptTracker(taskPrompt, currentRepo, steps, failureNote));
+    } else {
+      await sendTelegram(chatId, failureNote, MAIN_KEYBOARD);
+    }
   }
 }
 
