@@ -674,5 +674,221 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTimeMachine("fashion", false);
   }
 
+  
+  // --------------------------------------------------------------------------
+  // 9. INTERACTIVE GROUP CHAT CONTROLLER (#group-chat)
+  // --------------------------------------------------------------------------
+  const groupChatData = [
+    {
+      id: 0,
+      name: "Harriet, Mossline",
+      meta: "Founder, Mossline · with the Aether team",
+      initials: "HM",
+      bg: "#b89b72",
+      messages: [
+        { sender: "client", text: "my dad is now famous for darning lol 😂", time: "10:42 AM" },
+        { sender: "team", text: "Wait what happened?? Did the Sunday repair reel blow up?", time: "10:44 AM" },
+        { sender: "client", text: "It hit 1.4M views on TikTok! He got stopped at the Leeds farmers market this morning. Wholesale orders are up 340% this week. You guys are absolute magicians 🙏✨", time: "10:47 AM" },
+        { sender: "team", text: "Told you! Real craftsmanship beats corporate commercials every time. Prepping Episode 2 with the film crew for Tuesday 🎥🚀", time: "10:49 AM" }
+      ]
+    },
+    {
+      id: 1,
+      name: "Aiko, Quiet Labs",
+      meta: "Head of Growth, Quiet Labs · with the Aether team",
+      initials: "AB",
+      bg: "#8fa3b3",
+      messages: [
+        { sender: "client", text: "kevin has a fan club 😭", time: "02:15 PM" },
+        { sender: "team", text: "Our lead oscilloscope hardware engineer Kevin?? What happened? 😂", time: "02:18 PM" },
+        { sender: "client", text: "Yes! That 12-second debug reel hit 820+ saves on LinkedIn. 4 enterprise VPs booked pilot demos directly from his comments.", time: "02:22 PM" },
+        { sender: "team", text: "B2B doesn't have to be boring. Who said oscilloscopes can't be viral? ⚡", time: "02:25 PM" },
+        { sender: "client", text: "Our ARR target for Q4 was just achieved 3 weeks early. Thank you team!!", time: "02:28 PM" }
+      ]
+    },
+    {
+      id: 2,
+      name: "Leila, Sunday Skin",
+      meta: "Co-Founder, Sunday Skin · with the Aether team",
+      initials: "LH",
+      bg: "#e3a98a",
+      messages: [
+        { sender: "client", text: "sold out AGAIN 🔥", time: "11:05 AM" },
+        { sender: "team", text: "Already?! That was 4,000 units of the peptide serum!", time: "11:08 AM" },
+        { sender: "client", text: "The raw skin texture reel with zero blur filters did 620k impressions in 18 hours. The Shopify store crashed twice today.", time: "11:12 AM" },
+        { sender: "team", text: "Authenticity and clinical proof win over airbrushing every single time 🧪✨", time: "11:15 AM" },
+        { sender: "client", text: "Ordering double the glass bottles tomorrow. You guys completely transformed our brand trajectory.", time: "11:18 AM" }
+      ]
+    }
+  ];
+
+  const groupChatSection = document.getElementById("group-chat");
+  if (groupChatSection) {
+    const chatTabs = groupChatSection.querySelectorAll('ul[role="tablist"] button');
+    const chatAvatar = document.getElementById("chat-avatar");
+    const chatClientName = document.getElementById("chat-client-name");
+    const chatClientMeta = document.getElementById("chat-client-meta");
+    const chatMsgContainer = document.getElementById("group-chat-messages");
+
+    function renderChatThread(chatIndex, animate = true) {
+      const data = groupChatData[chatIndex];
+      if (!data) return;
+
+      if (chatAvatar) {
+        chatAvatar.textContent = data.initials;
+        chatAvatar.style.backgroundColor = data.bg;
+      }
+      if (chatClientName) chatClientName.textContent = data.name;
+      if (chatClientMeta) chatClientMeta.textContent = data.meta;
+
+      if (chatMsgContainer) {
+        chatMsgContainer.innerHTML = data.messages.map((m) => {
+          if (m.sender === "client") {
+            return `
+              <div class="flex items-end gap-2.5 max-w-[85%]">
+                <span class="flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold font-heading text-ink" style="background-color:${data.bg}">${data.initials}</span>
+                <div class="rounded-2xl rounded-bl-sm bg-paper p-3.5 shadow-sm border border-ink/5 text-[14.5px] leading-relaxed text-ink">
+                  <p>${m.text}</p>
+                  <span class="mt-1 block text-right font-mono text-[9px] text-stone">${m.time}</span>
+                </div>
+              </div>
+            `;
+          } else {
+            return `
+              <div class="flex flex-col items-end max-w-[85%] self-end">
+                <div class="rounded-2xl rounded-br-sm bg-ink p-3.5 text-[14.5px] leading-relaxed text-cream">
+                  <p>${m.text}</p>
+                  <span class="mt-1 flex items-center justify-end gap-1 font-mono text-[9px] text-cream/60">
+                    ${m.time} · <svg class="size-3 text-volt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                </div>
+              </div>
+            `;
+          }
+        }).join("");
+
+        if (animate && typeof gsap !== "undefined") {
+          gsap.fromTo(chatMsgContainer.children,
+            { opacity: 0, y: 12 },
+            { opacity: 1, y: 0, stagger: 0.08, duration: 0.35, ease: "power2.out" }
+          );
+        }
+      }
+    }
+
+    chatTabs.forEach((tab, idx) => {
+      tab.addEventListener("click", () => {
+        chatTabs.forEach((t) => {
+          t.setAttribute("aria-selected", "false");
+          t.classList.remove("bg-sand");
+          t.classList.add("hover:bg-sand/60");
+        });
+
+        tab.setAttribute("aria-selected", "true");
+        tab.classList.add("bg-sand");
+        tab.classList.remove("hover:bg-sand/60");
+
+        // Remove unread indicator
+        const unreadDot = tab.querySelector(".bg-ember.rounded-full");
+        if (unreadDot) unreadDot.remove();
+
+        renderChatThread(idx, true);
+      });
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // 10. CASE NOTES SLIDER CONTROLLER (#case-studies)
+  // --------------------------------------------------------------------------
+  const caseStudiesSection = document.getElementById("case-studies");
+  if (caseStudiesSection) {
+    const caseTrack = document.getElementById("case-studies-track");
+    const prevBtn = document.getElementById("case-prev-btn") || caseStudiesSection.querySelector('button[aria-label*="Previous"]');
+    const nextBtn = document.getElementById("case-next-btn") || caseStudiesSection.querySelector('button[aria-label*="Next"]');
+
+    if (caseTrack) {
+      function getScrollStep() {
+        const firstCard = caseTrack.querySelector('a, article, div');
+        return firstCard ? firstCard.offsetWidth + 24 : 450;
+      }
+
+      if (prevBtn) {
+        prevBtn.addEventListener("click", () => {
+          caseTrack.scrollBy({ left: -getScrollStep(), behavior: "smooth" });
+        });
+      }
+
+      if (nextBtn) {
+        nextBtn.addEventListener("click", () => {
+          caseTrack.scrollBy({ left: getScrollStep(), behavior: "smooth" });
+        });
+      }
+
+      // Mouse drag-to-scroll implementation
+      let isDown = false;
+      let startX;
+      let scrollLeft;
+
+      caseTrack.addEventListener("mousedown", (e) => {
+        isDown = true;
+        caseTrack.style.cursor = "grabbing";
+        caseTrack.setAttribute("data-dragging", "true");
+        startX = e.pageX - caseTrack.offsetLeft;
+        scrollLeft = caseTrack.scrollLeft;
+      });
+
+      caseTrack.addEventListener("mouseleave", () => {
+        isDown = false;
+        caseTrack.style.cursor = "grab";
+        caseTrack.removeAttribute("data-dragging");
+      });
+
+      caseTrack.addEventListener("mouseup", () => {
+        isDown = false;
+        caseTrack.style.cursor = "grab";
+        caseTrack.removeAttribute("data-dragging");
+      });
+
+      caseTrack.addEventListener("mousemove", (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - caseTrack.offsetLeft;
+        const walk = (x - startX) * 1.6;
+        caseTrack.scrollLeft = scrollLeft - walk;
+      });
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // 11. THE EDITORIAL SCROLL-TRIGGERED WORD DARKENING (#manifesto)
+  // --------------------------------------------------------------------------
+  const editorialSection = document.getElementById("manifesto");
+  if (editorialSection && typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
+    const words = editorialSection.querySelectorAll(".wall-word");
+    if (words.length > 0) {
+      ScrollTrigger.create({
+        trigger: editorialSection,
+        start: "top 75%",
+        end: "bottom 35%",
+        scrub: 0.5,
+        onUpdate: (self) => {
+          const progress = self.progress;
+          const totalWords = words.length;
+          const activeIndex = Math.floor(progress * totalWords * 1.08);
+
+          words.forEach((word, index) => {
+            if (index <= activeIndex) {
+              word.setAttribute("data-lit", "true");
+              word.style.color = "var(--ink)";
+            } else {
+              word.setAttribute("data-lit", "false");
+              word.style.color = "rgba(18, 19, 22, 0.18)";
+            }
+          });
+        }
+      });
+    }
+  }
+
   console.log("Updraft Studio Controller Initialized Successfully.");
 });
