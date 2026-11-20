@@ -885,6 +885,16 @@ document.addEventListener("DOMContentLoaded", () => {
               word.style.color = "rgba(18, 19, 22, 0.18)";
             }
           });
+
+          // Animate marker highlights when words inside them are lit
+          editorialSection.querySelectorAll(".marker").forEach((marker) => {
+            const hasLit = marker.querySelector('[data-lit="true"]');
+            if (hasLit) {
+              marker.setAttribute("data-on", "true");
+            } else {
+              marker.setAttribute("data-on", "false");
+            }
+          });
         }
       });
     }
