@@ -6,6 +6,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const STATE_REPO = process.env.GITHUB_REPO || 'sachin-lolariya/avengers-doomsday-countdown';
 const STATE_FILE = '.jarvis-state.json';
+const LIVE_SITE_URL = 'https://avengers-doomsday-countdown-pmk3.netlify.app';
 
 // ==========================================
 // TELEGRAM HELPERS
@@ -16,6 +17,7 @@ function sendTelegram(chatId, text, extra = {}) {
       chat_id: chatId,
       text: text,
       parse_mode: 'Markdown',
+      disable_web_page_preview: false,
       ...extra
     });
 
@@ -54,6 +56,33 @@ function answerCallback(queryId, text = '') {
     req.on('error', () => resolve());
     req.write(payload);
     req.end();
+  });
+}
+
+// Download Telegram Audio or Image File as Base64 Buffer
+function downloadTelegramFileBase64(fileId) {
+  return new Promise((resolve) => {
+    https.get(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/getFile?file_id=${fileId}`, (res) => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => {
+        try {
+          const info = JSON.parse(d);
+          if (!info.ok || !info.result?.file_path) return resolve(null);
+
+          https.get(`https://api.telegram.org/file/bot${TELEGRAM_TOKEN}/${info.result.file_path}`, (fileRes) => {
+            const chunks = [];
+            fileRes.on('data', c => chunks.push(c));
+            fileRes.on('end', () => {
+              resolve(Buffer.concat(chunks).toString('base64'));
+            });
+            fileRes.on('error', () => resolve(null));
+          }).on('error', () => resolve(null));
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    }).on('error', () => resolve(null));
   });
 }
 
@@ -103,7 +132,7 @@ async function getState() {
     try {
       const parsed = JSON.parse(Buffer.from(res.data.content, 'base64').toString('utf-8'));
       return { data: parsed, sha: res.data.sha };
-    } catch (e) {}
+    } catch (e) { }
   }
   return { data: { activeRepo: STATE_REPO }, sha: null };
 }
@@ -121,12 +150,16 @@ async function updateState(partialState) {
 }
 
 // ==========================================
-// GEMINI 3.5 FLASH-LITE AI ENGINE
+// GEMINI 3.5 FLASH-LITE MULTIMODAL AI ENGINE
 // ==========================================
 function callGemini(prompt, isJson = false) {
+  return callGeminiMultimodal([{ text: prompt }], isJson);
+}
+
+function callGeminiMultimodal(parts, isJson = false) {
   return new Promise((resolve) => {
     const payloadObj = {
-      contents: [{ parts: [{ text: prompt }] }],
+      contents: [{ parts }],
       generationConfig: {
         temperature: 0.2,
         maxOutputTokens: 8192,
@@ -168,7 +201,6 @@ function callGemini(prompt, isJson = false) {
 // ATOMIC MULTI-FILE GIT COMMIT ENGINE
 // ==========================================
 async function commitMultipleFiles(repo, filesToCommit, commitMessage) {
-  // filesToCommit: Array of { path: string, content: string }
   try {
     let branch = 'main';
     let refRes = await githubRequest(`/repos/${repo}/git/refs/heads/${branch}`);
@@ -187,7 +219,6 @@ async function commitMultipleFiles(repo, filesToCommit, commitMessage) {
     }
     const baseTreeSha = commitRes.data.tree.sha;
 
-    // Create new tree entries
     const treeEntries = filesToCommit.map(f => ({
       path: f.path,
       mode: '100644',
@@ -201,12 +232,11 @@ async function commitMultipleFiles(repo, filesToCommit, commitMessage) {
     });
 
     if (treeRes.status !== 201 || !treeRes.data?.sha) {
-      throw new Error(`Tree creation failed: ${JSON.stringify(treeRes.data)}`);
+      throw new Error(`Tree creation failed`);
     }
 
     const newTreeSha = treeRes.data.sha;
 
-    // Create commit
     const newCommitRes = await githubRequest(`/repos/${repo}/git/commits`, 'POST', {
       message: commitMessage,
       tree: newTreeSha,
@@ -214,19 +244,18 @@ async function commitMultipleFiles(repo, filesToCommit, commitMessage) {
     });
 
     if (newCommitRes.status !== 201 || !newCommitRes.data?.sha) {
-      throw new Error(`Commit creation failed: ${JSON.stringify(newCommitRes.data)}`);
+      throw new Error(`Commit creation failed`);
     }
 
     const newCommitSha = newCommitRes.data.sha;
 
-    // Update branch pointer
     const updateRes = await githubRequest(`/repos/${repo}/git/refs/heads/${branch}`, 'PATCH', {
       sha: newCommitSha,
       force: false
     });
 
     if (updateRes.status !== 200) {
-      throw new Error(`Branch pointer update failed: ${JSON.stringify(updateRes.data)}`);
+      throw new Error(`Branch pointer update failed`);
     }
 
     return { success: true, commitSha: newCommitSha.slice(0, 7), branch };
@@ -236,13 +265,13 @@ async function commitMultipleFiles(repo, filesToCommit, commitMessage) {
 }
 
 // ==========================================
-// TELEGRAM KEYBOARDS
+// TASTEFUL TELEGRAM KEYBOARDS (ANTI-SLOP DESIGN)
 // ==========================================
 const MAIN_KEYBOARD = {
   reply_markup: {
     keyboard: [
       [{ text: '💡 Think & Suggest' }, { text: '⚡ Cloud Status' }],
-      [{ text: '📂 Repositories' }, { text: '🌅 Briefing' }],
+      [{ text: '📂 Repositories' }, { text: '🌅 Morning Briefing' }],
       [{ text: '🌐 Live Website' }, { text: '🚀 Recent Commits' }],
       [{ text: '❓ Help' }]
     ],
@@ -255,9 +284,8 @@ const MAIN_KEYBOARD = {
 // FEATURE 1: AUTONOMOUS IDEA GENERATOR
 // ==========================================
 async function handleThinkAndSuggest(chatId, currentRepo) {
-  await sendTelegram(chatId, `💡 *JARVIS Autonomous Brainstorm Initiated...*\n\n🧠 Inspecting \`${currentRepo}\` architecture to synthesize 3 high-impact upgrades...`, MAIN_KEYBOARD);
+  await sendTelegram(chatId, `💡 *JARVIS Autonomous Brainstorm Initiated...*\n\n🧠 Inspecting \`${currentRepo}\` to synthesize 3 high-impact upgrades...`, MAIN_KEYBOARD);
 
-  // 1. Inspect repo files
   let defaultBranch = 'main';
   let treeRes = await githubRequest(`/repos/${currentRepo}/git/trees/${defaultBranch}?recursive=1`);
   if (treeRes.status !== 200) {
@@ -272,7 +300,6 @@ async function handleThinkAndSuggest(chatId, currentRepo) {
       .map(item => item.path);
   }
 
-  // 2. Fetch main sample file
   let sampleContent = '';
   const candidate = fileList.find(f => f.endsWith('index.html') || f.endsWith('README.md') || f.endsWith('index.php')) || fileList[0];
   if (candidate) {
@@ -282,7 +309,6 @@ async function handleThinkAndSuggest(chatId, currentRepo) {
     }
   }
 
-  // 3. Prompt Gemini for 3 creative suggestions
   const brainstormPrompt = `You are JARVIS, an elite autonomous software architect.
 Analyze repository "${currentRepo}".
 Available files: ${fileList.slice(0, 30).join(', ')}.
@@ -310,53 +336,55 @@ Respond with ONLY a JSON array containing 3 objects:
     } else if (parsed && Array.isArray(parsed.ideas)) {
       ideas = parsed.ideas;
     }
-  } catch (e) {}
+  } catch (e) { }
 
   if (!Array.isArray(ideas) || ideas.length === 0) {
     ideas = [
-      { id: 1, title: '✨ Cyber Glow Effects', description: 'Add dynamic glowing neon borders and audio pulse effects to the countdown units.', instruction: 'Add glowing neon border pulse and sound FX to timer units in index.html and style.css' },
-      { id: 2, title: '🎬 Background Video HUD', description: 'Integrate a high-tech HUD overlay on the background trailer video.', instruction: 'Add futuristic sci-fi HUD scanlines overlay over the hero banner video in style.css' },
-      { id: 3, title: '💬 Sound & Voice Toggles', description: 'Add an interactive Stark voice alert toggle when the countdown passes milestones.', instruction: 'Add audio chime sound alerts on live timer countdown in js/main.js' }
+      { id: 1, title: '✨ Cyber Glow Pulse', description: 'Dynamic glowing neon borders and audio pulse effects on countdown numbers.', instruction: 'Add glowing neon border pulse and sound FX to timer units in index.html and style.css' },
+      { id: 2, title: '🎬 Background Video HUD', description: 'Integrate a high-tech HUD scanline overlay over the hero trailer video.', instruction: 'Add futuristic sci-fi HUD scanlines overlay over the hero banner video in style.css' },
+      { id: 3, title: '💬 Stark Voice Alerts', description: 'Add an interactive audio chime and voice alert when countdown reaches milestones.', instruction: 'Add audio chime sound alerts on live timer countdown in js/main.js' }
     ];
   }
 
-  // Persist ideas in state
   await updateState({ lastIdeas: ideas });
 
-  // Format Telegram message with Inline Action Buttons
   const buttons = ideas.slice(0, 3).map((idea, idx) => [{
     text: `🔨 Build #${idx + 1}: ${(idea.title || 'Feature').slice(0, 24)}`,
     callback_data: `build_idea:${idx + 1}`
   }]);
-  buttons.push([{ text: '🔄 Brainstorm Again', callback_data: 'think_again' }]);
+  buttons.push([
+    { text: '🔄 Brainstorm Again', callback_data: 'think_again' },
+    { text: '🌐 Launch In-App View', web_app: { url: LIVE_SITE_URL } }
+  ]);
 
   const inlineKeyboard = {
     reply_markup: { inline_keyboard: buttons }
   };
 
-  const messageText = `💡 *JARVIS Autonomous Brainstorm for* \`${currentRepo}\`:
+  const messageText = `⚡ *JARVIS ARCHITECT // BRAINSTORM REPORT*
+📂 *Target Repo:* \`${currentRepo}\`
 
 1️⃣ *${ideas[0].title}*
-${ideas[0].description}
+_${ideas[0].description}_
 
 2️⃣ *${ideas[1].title}*
-${ideas[1].description}
+_${ideas[1].description}_
 
 3️⃣ *${ideas[2].title}*
-${ideas[2].description}
+_${ideas[2].description}_
 
-👇 *Tap any button below to have JARVIS plan, code, and commit it autonomously:*`;
+━━━━━━━━━━━━━━━━━━━━━
+👇 *Tap any button below to plan, code, and commit autonomously:*`;
 
   await sendTelegram(chatId, messageText, inlineKeyboard);
 }
 
 // ==========================================
-// FEATURE 2 & 3: MULTI-STEP AUTONOMOUS PLANNING, CRITIQUE & ATOMIC COMMIT
+// FEATURE 2 & 3: MULTI-STEP AUTONOMOUS PLANNING & ATOMIC COMMIT
 // ==========================================
 async function executeAutonomousBuild(chatId, currentRepo, taskPrompt) {
-  await sendTelegram(chatId, `⚡ *Autonomous Build Initiated:* "${taskPrompt}"\n\n🧠 *Step 1/3 (Planning):* Inspecting repository \`${currentRepo}\` and architecting multi-file solution...`, MAIN_KEYBOARD);
+  await sendTelegram(chatId, `⚡ *STARK TERMINAL // TASK INITIATED*\n\n📝 *Instruction:* "${taskPrompt}"\n🧠 *Step 1/3 (Planning):* Formulating multi-file architecture...`, MAIN_KEYBOARD);
 
-  // 1. Get file tree
   let defaultBranch = 'main';
   let treeRes = await githubRequest(`/repos/${currentRepo}/git/trees/${defaultBranch}?recursive=1`);
   if (treeRes.status !== 200) {
@@ -371,7 +399,6 @@ async function executeAutonomousBuild(chatId, currentRepo, taskPrompt) {
       .map(item => item.path);
   }
 
-  // 2. Planning Phase with Gemini
   const plannerPrompt = `You are JARVIS, an autonomous senior full-stack architect.
 User Request for repository "${currentRepo}": "${taskPrompt}".
 Repository files:
@@ -400,7 +427,7 @@ Respond with ONLY a JSON object:
         files: Array.isArray(parsed.files) ? parsed.files : []
       };
     }
-  } catch (e) {}
+  } catch (e) { }
 
   if (!planObj.files || planObj.files.length === 0) {
     const defaultTarget = fileList.find(f => f.endsWith('index.html') || f.endsWith('README.md')) || fileList[0] || 'README.md';
@@ -408,9 +435,8 @@ Respond with ONLY a JSON object:
   }
 
   const filesToProcess = planObj.files.slice(0, 3);
-  await sendTelegram(chatId, `📝 *Architecture Plan Approved:*\n_${planObj.summary}_\n\n🔧 *Step 2/3 (Coordinated Coding):* Generating code for:\n${filesToProcess.map(f => `• \`${f.path}\` _(${f.action})_`).join('\n')}...`, MAIN_KEYBOARD);
+  await sendTelegram(chatId, `📐 *Plan Approved:*\n_${planObj.summary}_\n\n🔧 *Step 2/3 (Coordinated Coding):* Generating code for:\n${filesToProcess.map(f => `• \`${f.path}\` _(${f.action})_`).join('\n')}...`, MAIN_KEYBOARD);
 
-  // 3. Generate Coordinated Code for Each File
   const generatedFiles = [];
   for (const fileItem of filesToProcess) {
     let existingContent = '';
@@ -428,16 +454,15 @@ Role for this file: "${fileItem.role}".
 ${existingContent ? `Existing File Content:\n\`\`\`\n${existingContent}\n\`\`\`` : 'This is a new file.'}
 
 Return the COMPLETE updated content for "${fileItem.path}".
-Output ONLY the raw content ready to be committed directly to disk. Do NOT wrap in markdown code blocks (no \`\`\` or \`\`\`html or \`\`\`javascript).`;
+Output ONLY the raw content ready to be committed directly to disk. Do NOT wrap in markdown code blocks.`;
 
     let fileContent = await callGemini(coderPrompt, false);
     if (!fileContent) {
       fileContent = existingContent;
     }
-    // Clean any markdown fences
     fileContent = fileContent.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '');
 
-    // Feature 3: Self-Reflection & Critique Loop
+    // Self-Reflection & Critique Loop
     const critiquePrompt = `You are JARVIS Quality Assurance.
 Examine this file content for "${fileItem.path}" for:
 1. Syntax correctness (HTML tags closed, CSS brackets matched, JS syntax valid)
@@ -448,8 +473,8 @@ File:
 ${fileContent.slice(0, 3000)}
 \`\`\`
 
-If completely valid, return ONLY the word: VERIFIED
-If you find a critical syntax error, return the fixed raw file content only.`;
+If completely valid, return ONLY: VERIFIED
+If critical syntax error found, return the fixed raw file content only.`;
 
     const critiqueRes = await callGemini(critiquePrompt, false);
     if (critiqueRes && !critiqueRes.includes('VERIFIED') && critiqueRes.length > 50) {
@@ -459,31 +484,46 @@ If you find a critical syntax error, return the fixed raw file content only.`;
     generatedFiles.push({ path: fileItem.path, content: fileContent });
   }
 
-  // 4. Atomic Multi-File Commit via Git Trees API
+  // Atomic Multi-File Git Commit
   const commitMsg = `Cloud JARVIS: ${planObj.summary.slice(0, 60)}`;
   const commitResult = await commitMultipleFiles(currentRepo, generatedFiles, commitMsg);
 
   if (commitResult.success) {
     const isSiteRepo = currentRepo.includes('avengers');
-    const liveLink = isSiteRepo ? '\n🚀 *Live Netlify Site:* https://avengers-doomsday-countdown-pmk3.netlify.app' : '';
+    const summaryFiles = generatedFiles.map(f => `▸ \`${f.path}\` _(Verified)_`).join('\n');
 
-    const summaryFiles = generatedFiles.map(f => `• \`${f.path}\` _(Verified)_`).join('\n');
-    const successMsg = `🎉 *Autonomous Build Complete & Pushed!*
+    const inlineSuccess = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '🌐 Launch In-App WebApp', web_app: { url: LIVE_SITE_URL } },
+            { text: '📂 View on GitHub', url: `https://github.com/${currentRepo}` }
+          ],
+          [
+            { text: '💡 More Ideas', callback_data: 'think_again' },
+            { text: '🌅 Morning Briefing', callback_data: 'briefing_now' }
+          ]
+        ]
+      }
+    };
+
+    const successMsg = `🎉 *AUTONOMOUS BUILD COMPLETE & DEPLOYED*
 
 📂 *Repository:* \`${currentRepo}\`
 📌 *Commit:* \`${commitResult.commitSha}\` - "${commitMsg}"
 
-📄 *Coordinated Multi-File Changes:*
+📄 *Coordinated Modifications:*
 ${summaryFiles}
 
-🛡️ *Quality Check Passed:*
+🛡️ *Quality Assurance Pass:*
 • Syntax & Markup: Verified
 • Mobile Responsive: Checked
-• Atomic Commit: Deployed${liveLink}
+• Atomic Git Trees: Pushed
 
-💡 _Your changes are permanently live in GitHub!_`;
+━━━━━━━━━━━━━━━━━━━━━
+Tap below to test the changes live inside Telegram!`;
 
-    await sendTelegram(chatId, successMsg, MAIN_KEYBOARD);
+    await sendTelegram(chatId, successMsg, inlineSuccess);
   } else {
     await sendTelegram(chatId, `⚠️ Git Trees commit error: ${commitResult.error || 'Failed'}.`, MAIN_KEYBOARD);
   }
@@ -495,7 +535,6 @@ ${summaryFiles}
 async function handleDailyBriefing(chatId, currentRepo) {
   await sendTelegram(chatId, `🌅 *JARVIS Synthesizing Executive Standup & Fleet Report...*`, MAIN_KEYBOARD);
 
-  // 1. Check Bot Fleet
   const botFleet = [
     { name: 'Jarvis Assistant', handle: '@sachin_jarvis_ai_bot', token: TELEGRAM_TOKEN },
     { name: 'Mobile & Game Builder', handle: '@sachin_appbuilder_bot', token: '8689464042:AAEpbxtWM3daawqJnwBpuJ8WOX6u3OrrpEo' }
@@ -520,7 +559,6 @@ async function handleDailyBriefing(chatId, currentRepo) {
     }
   }
 
-  // 2. Check Live Website
   const siteRes = await new Promise((res) => {
     const req = https.request('https://avengers-doomsday-countdown-pmk3.netlify.app', (r) => res(r.statusCode));
     req.on('error', () => res(500));
@@ -528,7 +566,6 @@ async function handleDailyBriefing(chatId, currentRepo) {
   });
   const siteStatus = `• Avengers Countdown: ${siteRes === 200 ? '🟢 ONLINE (200 OK)' : `🔴 HTTP ${siteRes}`}`;
 
-  // 3. Fetch latest commits
   const commitsRes = await githubRequest(`/repos/${currentRepo}/commits?per_page=2`);
   let latestCommits = [];
   if (commitsRes.status === 200 && Array.isArray(commitsRes.data)) {
@@ -565,7 +602,18 @@ Keep the tone energetic, confident, loyal, and motivating.`;
   const briefingText = await callGemini(standupPrompt, false);
   const finalMsg = briefingText || `🌅 *Good day, Sir.*\n\n${botStatuses.join('\n')}\n${siteStatus}\n\n• *Active Repository:* \`${currentRepo}\`\n• *Latest Commit:* ${latestCommits[0] || 'Synced'}\n• *Recommendation:* Ready for autonomous tasks anytime!`;
 
-  await sendTelegram(chatId, finalMsg, MAIN_KEYBOARD);
+  const inlineBriefing = {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '🌐 Launch In-App WebApp', web_app: { url: LIVE_SITE_URL } },
+          { text: '💡 Brainstorm Upgrades', callback_data: 'think_again' }
+        ]
+      ]
+    }
+  };
+
+  await sendTelegram(chatId, finalMsg, inlineBriefing);
 }
 
 // ==========================================
@@ -599,7 +647,6 @@ exports.handler = async (event) => {
     const stateObj = await getState();
     const currentRepo = stateObj.data?.activeRepo || STATE_REPO;
 
-    // A. Switch Repository
     if (data.startsWith('set_repo:')) {
       const chosenRepo = data.replace('set_repo:', '');
       await updateState({ activeRepo: chosenRepo });
@@ -608,13 +655,12 @@ exports.handler = async (event) => {
 
 📂 *Current Repo:* \`${chosenRepo}\`
 
-💡 *You can now text any code edits, features, or tap "💡 Think & Suggest" and JARVIS will manage this repository!*`;
+💡 *You can now text or voice note any code edits, features, or tap "💡 Think & Suggest" and JARVIS will manage this project!*`;
 
       await sendTelegram(chatId, msgSwitched, MAIN_KEYBOARD);
       return { statusCode: 200, body: 'ok' };
     }
 
-    // B. One-Tap Autonomous Builder for Ideas
     if (data.startsWith('build_idea:')) {
       const ideaIndex = parseInt(data.replace('build_idea:', ''), 10) - 1;
       const ideas = stateObj.data?.lastIdeas || [];
@@ -628,25 +674,28 @@ exports.handler = async (event) => {
       return { statusCode: 200, body: 'ok' };
     }
 
-    // C. Re-brainstorm
     if (data === 'think_again') {
       await handleThinkAndSuggest(chatId, currentRepo);
+      return { statusCode: 200, body: 'ok' };
+    }
+
+    if (data === 'briefing_now') {
+      await handleDailyBriefing(chatId, currentRepo);
       return { statusCode: 200, body: 'ok' };
     }
 
     return { statusCode: 200, body: 'ok' };
   }
 
-  // 2. Handle Text Messages
+  // 2. Extract Message (Text, Voice, or Photo)
   const message = body.message || body.edited_message;
-  if (!message || !message.text) {
+  if (!message) {
     return { statusCode: 200, body: 'ok' };
   }
 
   const chatId = String(message.chat.id);
-  const text = message.text.trim();
 
-  // Security Lock
+  // Security Check
   if (ALLOWED_CHAT_ID && chatId !== String(ALLOWED_CHAT_ID)) {
     await sendTelegram(chatId, `⛔ Access Denied. Cloud JARVIS is private property of Sachin Lolariya.`);
     return { statusCode: 200, body: 'forbidden' };
@@ -655,30 +704,121 @@ exports.handler = async (event) => {
   const stateObj = await getState();
   const currentRepo = stateObj.data?.activeRepo || STATE_REPO;
 
-  // Command: /start or Help
+  // ==========================================
+  // UPGRADE 1: 🎙️ STARK VOICE CONTROL
+  // ==========================================
+  if (message.voice || message.audio) {
+    const voiceObj = message.voice || message.audio;
+    const fileId = voiceObj.file_id;
+    const duration = voiceObj.duration || 1;
+
+    await sendTelegram(chatId, `🎙️ *Voice Note Received (${duration}s)*\n_JARVIS Multimodal is listening and transcribing instructions..._`, MAIN_KEYBOARD);
+
+    const base64Audio = await downloadTelegramFileBase64(fileId);
+    if (!base64Audio) {
+      await sendTelegram(chatId, `⚠️ Could not download voice note from Telegram.`, MAIN_KEYBOARD);
+      return { statusCode: 200, body: 'ok' };
+    }
+
+    const transcribePrompt = `Listen to this voice message from Sachin.
+It contains software development instructions or design changes for repository "${currentRepo}".
+Transcribe and extract the core actionable coding or design task.
+Return ONLY the transcribed instruction in plain text (no commentary, no quotes).`;
+
+    const transcribedTask = await callGeminiMultimodal([
+      { inlineData: { mimeType: 'audio/ogg', data: base64Audio } },
+      { text: transcribePrompt }
+    ]);
+
+    if (!transcribedTask || transcribedTask.length < 3) {
+      await sendTelegram(chatId, `⚠️ Audio was unclear or could not be transcribed. Please speak clearly or send text.`, MAIN_KEYBOARD);
+      return { statusCode: 200, body: 'ok' };
+    }
+
+    await sendTelegram(chatId, `🗣️ *Voice Command Transcribed:*\n_"${transcribedTask}"_\n\n🧠 *Executing autonomous multi-file build...*`, MAIN_KEYBOARD);
+    await executeAutonomousBuild(chatId, currentRepo, transcribedTask);
+    return { statusCode: 200, body: 'ok' };
+  }
+
+  // ==========================================
+  // UPGRADE 2: 📸 DESIGN-TO-CODE (SCREENSHOTS & SKETCHES)
+  // ==========================================
+  if (message.photo && Array.isArray(message.photo) && message.photo.length > 0) {
+    const highestResPhoto = message.photo[message.photo.length - 1];
+    const fileId = highestResPhoto.file_id;
+    const caption = (message.caption || '').trim();
+
+    await sendTelegram(chatId, `📸 *Design Screenshot Received*\n_JARVIS Vision is analyzing UI hierarchy, colors, and layout..._`, MAIN_KEYBOARD);
+
+    const base64Image = await downloadTelegramFileBase64(fileId);
+    if (!base64Image) {
+      await sendTelegram(chatId, `⚠️ Could not download image from Telegram.`, MAIN_KEYBOARD);
+      return { statusCode: 200, body: 'ok' };
+    }
+
+    const visionPrompt = `You are JARVIS, an elite frontend architect.
+The user provided this UI design / screenshot / sketch for repository "${currentRepo}".
+User caption / extra notes: "${caption || 'Recreate this visual layout in code'}".
+Analyze the visual layout, spacing, components, typography, color palette, and interactive elements.
+Formulate a clear, actionable coding instruction to implement this exact visual design in the project.
+Output ONLY the detailed coding instruction.`;
+
+    const visualInstruction = await callGeminiMultimodal([
+      { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
+      { text: visionPrompt }
+    ]);
+
+    await sendTelegram(chatId, `📐 *Visual Blueprint Extracted:*\n_${visualInstruction?.slice(0, 180)}..._\n\n🔧 *Executing multi-file implementation...*`, MAIN_KEYBOARD);
+    await executeAutonomousBuild(chatId, currentRepo, visualInstruction || caption || 'Implement UI from screenshot');
+    return { statusCode: 200, body: 'ok' };
+  }
+
+  // ==========================================
+  // TEXT COMMANDS & DIALOGUE
+  // ==========================================
+  if (!message.text) {
+    return { statusCode: 200, body: 'ok' };
+  }
+
+  const text = message.text.trim();
+
+  // /start or Help
   if (text.startsWith('/start') || text === '❓ Help' || text.startsWith('/help')) {
-    const welcome = `☁️ *Cloud JARVIS Online 24/7*
+    const welcome = `⚡ *STARK INDUSTRIES // CLOUD JARVIS 2.0*
 
-Good day, sir. I am running continuously in the Netlify Cloud.
-*Your laptop can be completely off* and I will autonomously think, code, critique, and deploy across all your GitHub repositories!
+Good day, Sachin. I am operating at 100% capacity in the Netlify Cloud 24/7.
+*Your laptop can remain off* and I will autonomously build across all your projects.
 
-*Autonomous Capabilities:*
+*Autonomous Multi-Modal Capabilities:*
+• 🎙️ *Stark Voice Control* - Send voice notes; I listen, transcribe, and code!
+• 📸 *Design-to-Code* - Send any UI screenshot or hand sketch to build it!
 • 💡 *Think & Suggest* - Brainstorms 3 creative upgrades with 1-tap builders
 • ⚡ *Cloud Status* - Health, active repo & latest commit
 • 📂 *Repositories* - View & switch between your GitHub projects
-• 🌅 *Briefing* - Executive daily standup & velocity report
-• 🌐 *Live Website* - Open your live Netlify website
-• 🚀 *Recent Commits* - View latest updates on current repo
+• 🌅 *Morning Briefing* - Daily 10:30 AM executive standup & bot fleet health
+• 🌐 *Live Website* - Native Telegram In-App WebApp viewer
 
-*Multi-File Autonomous Developer:*
-You can text me ANY feature, design change, or bug fix:
-• *"Add a glowing gold pulse to the countdown numbers"*
-• *"Create a dark mode toggle with sound effects"*
-• *"Update hero title to PHASE VI // TIME RUNS OUT"*
+*Text, Voice, or Image Prompts:*
+• *"Change the countdown styling to glowing cyber-gold"*
+• Send a voice note: *"Add sound effects when the countdown updates"*
+• Send a screenshot of a banner design to replicate it!`;
 
-I will plan the multi-file architecture, generate the code, critique syntax for mobile responsiveness, and commit atomically to GitHub!`;
+    const inlineStart = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '🌐 Launch In-App WebApp', web_app: { url: LIVE_SITE_URL } },
+            { text: '💡 Think & Suggest', callback_data: 'think_again' }
+          ],
+          [
+            { text: '🌅 Morning Briefing', callback_data: 'briefing_now' },
+            { text: '📂 View on GitHub', url: `https://github.com/${currentRepo}` }
+          ]
+        ]
+      }
+    };
 
-    await sendTelegram(chatId, welcome, MAIN_KEYBOARD);
+    await sendTelegram(chatId, welcome, inlineStart);
     return { statusCode: 200, body: 'ok' };
   }
 
@@ -689,7 +829,7 @@ I will plan the multi-file architecture, generate the code, critique syntax for 
   }
 
   // Feature 4: 🌅 Briefing / Daily Standup
-  if (text === '🌅 Briefing' || text === '🌅 Morning Standup' || text === '/briefing' || text === '/standup') {
+  if (text === '🌅 Briefing' || text === '🌅 Morning Standup' || text === '🌅 Morning Briefing' || text === '/briefing' || text === '/standup') {
     await handleDailyBriefing(chatId, currentRepo);
     return { statusCode: 200, body: 'ok' };
   }
@@ -707,14 +847,14 @@ I will plan the multi-file architecture, generate the code, critique syntax for 
         reply_markup: { inline_keyboard: buttons }
       };
 
-      await sendTelegram(chatId, `📂 *Your GitHub Repositories:*\n*Active Repository:* \`${currentRepo}\`\n\nTap any repository below to switch active context:`, inlineKeyboard);
+      await sendTelegram(chatId, `📂 *GitHub Project Directory:*\n*Active Repository:* \`${currentRepo}\`\n\nTap any repository below to switch active context:`, inlineKeyboard);
     } else {
       await sendTelegram(chatId, `⚠️ Could not fetch repositories from GitHub (HTTP ${ghRes.status}).`, MAIN_KEYBOARD);
     }
     return { statusCode: 200, body: 'ok' };
   }
 
-  // Command: ⚡ Cloud Status (also handles old '⚡ Status')
+  // Command: ⚡ Cloud Status
   if (text === '⚡ Cloud Status' || text === '⚡ Status' || text === '/status') {
     const ghRes = await githubRequest(`/repos/${currentRepo}/commits?per_page=1`);
     let lastCommit = 'Unknown';
@@ -723,26 +863,44 @@ I will plan the multi-file architecture, generate the code, critique syntax for 
     }
 
     const isSiteRepo = currentRepo.includes('avengers');
-    const liveLink = isSiteRepo ? '\n• *Live Website:* https://avengers-doomsday-countdown-pmk3.netlify.app' : '';
+    const liveLink = isSiteRepo ? `\n• *Live URL:* ${LIVE_SITE_URL}` : '';
 
-    const statusMsg = `☁️ *Cloud JARVIS Status Report:*
+    const statusMsg = `☁️ *CLOUD JARVIS // STATUS REPORT*
 • *Platform:* Netlify Cloud Serverless (24/7)
 • *Laptop Power:* Not required (Runs 100% with laptop OFF)
 • *Active Repository:* \`${currentRepo}\`
 • *Latest Commit:* ${lastCommit}${liveLink}
-• *AI Brain:* Google Gemini 3.5 Flash-Lite (Active)
-• *Autonomous Suite:* Thinking • Multi-File Planning • Self-Critique • Standups`;
+• *AI Brain:* Google Gemini 3.5 Flash-Lite (Multimodal Online)
+• *Multimodal Sensors:* Voice Notes (🎙️) • Screenshots (📸) • Text (⌨️)`;
 
-    await sendTelegram(chatId, statusMsg, MAIN_KEYBOARD);
+    const inlineStatus = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '🌐 Launch In-App WebApp', web_app: { url: LIVE_SITE_URL } },
+            { text: '💡 Brainstorm Ideas', callback_data: 'think_again' }
+          ]
+        ]
+      }
+    };
+
+    await sendTelegram(chatId, statusMsg, inlineStatus);
     return { statusCode: 200, body: 'ok' };
   }
 
-  // Command: 🌐 Live Website (also handles old '🌐 Live Preview')
+  // Command: 🌐 Live Website
   if (text === '🌐 Live Website' || text === '🌐 Live Preview' || text === '/site') {
-    await sendTelegram(chatId, `🌐 *Your Live Website:*
-https://avengers-doomsday-countdown-pmk3.netlify.app
-
-✨ Tap **📂 Repositories** to switch between projects anytime!`, MAIN_KEYBOARD);
+    const inlineSite = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '🌐 Launch In-App WebApp', web_app: { url: LIVE_SITE_URL } },
+            { text: '📂 Open in Browser', url: LIVE_SITE_URL }
+          ]
+        ]
+      }
+    };
+    await sendTelegram(chatId, `🌐 *Avengers Doomsday Countdown Live Site:*\n${LIVE_SITE_URL}\n\n✨ Tap **"Launch In-App WebApp"** below to view directly inside Telegram!`, inlineSite);
     return { statusCode: 200, body: 'ok' };
   }
 
@@ -758,19 +916,7 @@ https://avengers-doomsday-countdown-pmk3.netlify.app
     return { statusCode: 200, body: 'ok' };
   }
 
-  // Legacy Button: 🚀 Git Push
-  if (text === '🚀 Git Push') {
-    await sendTelegram(chatId, `🚀 *Automatic Cloud Deployment Active!*\n\nAll commits by Cloud JARVIS are automatically pushed to GitHub and deployed in real time. Manual git pushes are no longer needed!`, MAIN_KEYBOARD);
-    return { statusCode: 200, body: 'ok' };
-  }
-
-  // Legacy Button: 📸 Screenshot
-  if (text === '📸 Screenshot') {
-    await sendTelegram(chatId, `🖥️ *Laptop Screenshot Retired*\n\nJARVIS is now running 100% in the Cloud 24/7 independent of your laptop! Your laptop can remain completely turned off.\n\nTap 🌐 *Live Website* to view your live deployed site at any time.`, MAIN_KEYBOARD);
-    return { statusCode: 200, body: 'ok' };
-  }
-
-  // Autonomous Execution for any custom user instructions
+  // Autonomous Multi-File Execution for any custom user instructions
   await executeAutonomousBuild(chatId, currentRepo, text);
   return { statusCode: 200, body: 'ok' };
 };

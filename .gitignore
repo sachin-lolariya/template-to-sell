@@ -1,16 +1,13 @@
-.netlify/
-.gemini/
-.agents/
-*.log
+# Node
 node_modules/
+npm-debug.log*
+
+# Netlify & Environment
+.netlify/
+.env*
+.agents/
+skills-lock.json
+
+# OS Files
 .DS_Store
 Thumbs.db
-
-# Media & Binary exclusions for 100% copyright compliance
-*.mp4
-*.mp3
-*.wav
-*.m4a
-*.mkv
-*.webm
-
