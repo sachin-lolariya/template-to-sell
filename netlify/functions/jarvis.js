@@ -4,7 +4,7 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ALLOWED_CHAT_ID = process.env.ALLOWED_CHAT_ID;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const STATE_REPO = process.env.GITHUB_REPO || 'sachin-lolariya/avengers-doomsday-countdown';
+const STATE_REPO = process.env.GITHUB_REPO || 'sachin-lolariya/template-to-sell';
 const STATE_FILE = '.jarvis-state.json';
 const LIVE_SITE_URL = 'https://avengers-doomsday-countdown-pmk3.netlify.app';
 
@@ -380,6 +380,85 @@ _${ideas[2].description}_
 }
 
 // ==========================================
+// INTELLIGENT INTENT ROUTER & CONVERSATIONAL BRAIN
+// ==========================================
+async function handleUserInput(chatId, currentRepo, userInput, isVoice = false) {
+  const routingPrompt = `You are JARVIS, an elite AI assistant, software engineer, and digital butler created for Sachin Lolariya.
+You assist Sachin with managing his software projects, coding, repository maintenance, and general queries.
+
+Active Project Repository: "${currentRepo}"
+Known Repositories on Sachin's Account: "sachin-lolariya/template-to-sell" (Updraft Creative Studio template), "sachin-lolariya/sachin-lolariya" (Profile).
+Note: There is NO "avengers-doomsday-countdown" repository on Sachin's GitHub.
+
+User Input: "${userInput}"
+
+Analyze the user's input and classify the intent:
+1. "CHAT": The user is asking a question, greeting, chatting, seeking explanations/advice, discussing technical topics, asking about capabilities, or talking (e.g. "So you cannot delete the repo", "How does Netlify work?", "What does this project do?", "Who are you?", "Why did this happen?").
+2. "BUILD": The user is EXPLICITLY ordering you to write, modify, delete, add, refactor, or style code or files in the active repository (e.g. "Add a dark mode toggle", "Change the button color to red", "Fix padding on mobile", "Create a contact form").
+3. "REPO_QUERY": The user is asking to inspect recent commits, file tree, branches, or repository list (e.g. "Show me recent commits", "What files are in this repo?", "List my repos").
+
+Respond with ONLY a JSON object:
+{
+  "intent": "CHAT" | "BUILD" | "REPO_QUERY",
+  "reply": "If intent is CHAT or REPO_QUERY, write your direct, intelligent, witty, concise JARVIS response here. Use British butler/Stark AI persona (polite, 'Sir', articulate). Address their exact question truthfully. If they ask about deleting a repository, explain clearly that you have safeguards preventing repository deletion without explicit authorization and that you do not perform destructive repository removals, and clarify which repos exist. Keep formatting clean with Telegram Markdown.",
+  "task": "If intent is BUILD, write the refined actionable coding specification for the architect engine here. Otherwise leave empty string."
+}`;
+
+  let routingResult = null;
+  try {
+    const rawResult = await callGemini(routingPrompt, true);
+    if (rawResult) {
+      routingResult = JSON.parse(rawResult);
+    }
+  } catch (e) {
+    routingResult = null;
+  }
+
+  // 1. Direct Conversational Reply
+  if (routingResult && routingResult.intent === 'CHAT') {
+    const replyText = routingResult.reply || `Understood, Sir. How else may I assist you with \`${currentRepo}\` today?`;
+    await sendTelegram(chatId, replyText, MAIN_KEYBOARD);
+    return;
+  }
+
+  // 2. Repo Query / Information Request
+  if (routingResult && routingResult.intent === 'REPO_QUERY') {
+    const replyText = routingResult.reply || `Inspecting repository details for \`${currentRepo}\`, Sir.`;
+    await sendTelegram(chatId, replyText, MAIN_KEYBOARD);
+    return;
+  }
+
+  // 3. Autonomous Code Build
+  if (routingResult && routingResult.intent === 'BUILD') {
+    const taskSpec = routingResult.task || userInput;
+    await executeAutonomousBuild(chatId, currentRepo, taskSpec);
+    return;
+  }
+
+  // 4. Heuristic Safety Fallback:
+  // If user asked a question, never execute a build blindly!
+  const trimmed = userInput.trim();
+  const isQuestion = trimmed.endsWith('?') ||
+    /^(what|why|how|who|when|where|can you|could you|are you|is it|so you|tell me|explain|why do you)/i.test(trimmed);
+
+  if (isQuestion) {
+    const directChatPrompt = `You are JARVIS, Sachin Lolariya's personal AI assistant.
+Sachin asks: "${userInput}"
+Active repository: "${currentRepo}"
+
+Provide a direct, helpful, concise answer in JARVIS persona (polite, 'Sir', sharp, knowledgeable).
+If asked about repository deletion, explain that you do not delete repositories for safety reasons.`;
+
+    const chatResponse = await callGemini(directChatPrompt, false);
+    await sendTelegram(chatId, chatResponse || `Indeed, Sir. I am at your service regarding \`${currentRepo}\`.`, MAIN_KEYBOARD);
+    return;
+  }
+
+  // 5. Default to autonomous build only for unambiguous imperative statements
+  await executeAutonomousBuild(chatId, currentRepo, userInput);
+}
+
+// ==========================================
 // FEATURE 2 & 3: MULTI-STEP AUTONOMOUS PLANNING & ATOMIC COMMIT
 // ==========================================
 async function executeAutonomousBuild(chatId, currentRepo, taskPrompt) {
@@ -720,23 +799,21 @@ exports.handler = async (event) => {
       return { statusCode: 200, body: 'ok' };
     }
 
-    const transcribePrompt = `Listen to this voice message from Sachin.
-It contains software development instructions or design changes for repository "${currentRepo}".
-Transcribe and extract the core actionable coding or design task.
-Return ONLY the transcribed instruction in plain text (no commentary, no quotes).`;
+    const transcribePrompt = `Transcribe this voice message from Sachin accurately.
+Return ONLY the transcribed text in plain English (no commentary, no quotes).`;
 
-    const transcribedTask = await callGeminiMultimodal([
+    const transcribedText = await callGeminiMultimodal([
       { inlineData: { mimeType: 'audio/ogg', data: base64Audio } },
       { text: transcribePrompt }
     ]);
 
-    if (!transcribedTask || transcribedTask.length < 3) {
+    if (!transcribedText || transcribedText.length < 2) {
       await sendTelegram(chatId, `⚠️ Audio was unclear or could not be transcribed. Please speak clearly or send text.`, MAIN_KEYBOARD);
       return { statusCode: 200, body: 'ok' };
     }
 
-    await sendTelegram(chatId, `🗣️ *Voice Command Transcribed:*\n_"${transcribedTask}"_\n\n🧠 *Executing autonomous multi-file build...*`, MAIN_KEYBOARD);
-    await executeAutonomousBuild(chatId, currentRepo, transcribedTask);
+    await sendTelegram(chatId, `🗣️ *Voice Transcribed:*\n_"${transcribedText}"_`, MAIN_KEYBOARD);
+    await handleUserInput(chatId, currentRepo, transcribedText, true);
     return { statusCode: 200, body: 'ok' };
   }
 
@@ -900,7 +977,7 @@ Good day, Sachin. I am operating at 100% capacity in the Netlify Cloud 24/7.
         ]
       }
     };
-    await sendTelegram(chatId, `🌐 *Avengers Doomsday Countdown Live Site:*\n${LIVE_SITE_URL}\n\n✨ Tap **"Launch In-App WebApp"** below to view directly inside Telegram!`, inlineSite);
+    await sendTelegram(chatId, `🌐 *Your Live Website:*\n${LIVE_SITE_URL}\n\n✨ Tap **"Launch In-App WebApp"** below to view directly inside Telegram!`, inlineSite);
     return { statusCode: 200, body: 'ok' };
   }
 
@@ -916,7 +993,7 @@ Good day, Sachin. I am operating at 100% capacity in the Netlify Cloud 24/7.
     return { statusCode: 200, body: 'ok' };
   }
 
-  // Autonomous Multi-File Execution for any custom user instructions
-  await executeAutonomousBuild(chatId, currentRepo, text);
+  // Intelligent Multi-Intent Dialogue & Execution Engine
+  await handleUserInput(chatId, currentRepo, text, false);
   return { statusCode: 200, body: 'ok' };
 };
