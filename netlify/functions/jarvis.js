@@ -6,7 +6,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const STATE_REPO = 'sachin-lolariya/template-to-sell';
 const STATE_FILE = '.jarvis-state.json';
-const LIVE_SITE_URL = 'https://avengers-doomsday-countdown-pmk3.netlify.app';
+const LIVE_SITE_URL = 'https://avengers-doomsday-countdown-pmk3.netlify.app/hud';
 
 // ==========================================
 // TELEGRAM HELPERS
@@ -482,6 +482,27 @@ _${ideas[2].description}_
 // INTELLIGENT INTENT ROUTER & CONVERSATIONAL BRAIN
 // ==========================================
 async function handleUserInput(chatId, currentRepo, userInput, isVoice = false) {
+  const trimmed = userInput.trim();
+  const lower = trimmed.toLowerCase();
+
+  // Option 1: Hardware control hooks for Android Termux Bridge
+  if (lower.includes('torch') || lower.includes('flashlight') || lower.includes('vibrate') || lower.includes('phone battery') || (lower.startsWith('speak') && lower.includes('phone'))) {
+    await new Promise((res) => {
+      const payload = JSON.stringify({ command: trimmed });
+      const req = https.request({
+        hostname: 'avengers-doomsday-countdown-pmk3.netlify.app',
+        path: '/.netlify/functions/device?action=command',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }
+      }, () => res());
+      req.on('error', () => res());
+      req.write(payload);
+      req.end();
+    });
+
+    await sendTelegram(chatId, `📱 *STARK MOBILE NODE // ORDER DISPATCHED*\n\n• *Command:* \`${trimmed}\`\n• *Target:* Android Termux Bridge (Option 1)\n• *Status:* 🟢 Transmitted to phone queue`, MAIN_KEYBOARD);
+    return;
+  }
   const routingPrompt = `You are JARVIS, an elite AI assistant, software engineer, and digital butler created for Sachin Lolariya.
 You assist Sachin with managing his software projects, coding, repository maintenance, and general queries.
 
@@ -536,7 +557,6 @@ Respond with ONLY a JSON object:
 
   // 4. Heuristic Safety Fallback:
   // If user asked a question, never execute a build blindly!
-  const trimmed = userInput.trim();
   const isQuestion = trimmed.endsWith('?') ||
     /^(what|why|how|who|when|where|can you|could you|are you|is it|so you|tell me|explain|why do you)/i.test(trimmed);
 

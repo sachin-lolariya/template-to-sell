@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>STARK INDUSTRIES // J.A.R.V.I.S. OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050811;
+      --bg-card: rgba(9, 16, 32, 0.75);
+      --border: rgba(0, 240, 255, 0.22);
+      --cyan: #00f0ff;
+      --cyan-glow: rgba(0, 240, 255, 0.45);
+      --gold: #ffbe0b;
+      --gold-glow: rgba(255, 190, 11, 0.4);
+      --crimson: #ff0055;
+      --text: #e2f1ff;
+      --text-dim: #7899b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 50% 18%, rgba(0, 240, 255, 0.12) 0%, transparent 55%),
+        radial-gradient(circle at 85% 75%, rgba(255, 190, 11, 0.05) 0%, transparent 40%),
+        linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Ambient Scanline */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15) 1px, transparent 1px, transparent 2px);
+      pointer-events: none;
+      z-index: 99;
+      opacity: 0.6;
+    }
+
+    /* Top HUD Bar */
+    header {
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      background: rgba(5, 8, 17, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .stark-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--cyan);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px var(--cyan-glow);
+      animation: pulse-border 3s infinite;
+    }
+
+    .brand-logo-inner {
+      width: 14px;
+      height: 14px;
+      background: var(--cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--cyan);
+    }
+
+    .brand-text h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.15rem;
+      letter-spacing: 2.5px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 0 10px var(--cyan-glow);
+    }
+
+    .brand-text p {
+      font-size: 0.75rem;
+      color: var(--cyan);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .hud-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--cyan);
+      padding: 6px 14px;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #00ff88;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #00ff88;
+      animation: blink 1.4s infinite;
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 20px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ARC Reactor Centerpiece */
+    .reactor-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 0;
+      position: relative;
+    }
+
+    .arc-reactor {
+      width: 200px;
+      height: 200px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .arc-ring-outer {
+      position: absolute;
+      inset: 0;
+      border: 3px dashed var(--cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 30px var(--cyan-glow), inset 0 0 30px var(--cyan-glow);
+      animation: rotate-cw 20s linear infinite;
+    }
+
+    .arc-ring-mid {
+      position: absolute;
+      inset: 22px;
+      border: 2px solid rgba(0, 240, 255, 0.4);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: rotate-ccw 10s linear infinite;
+    }
+
+    .arc-core {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffffff 0%, var(--cyan) 60%, rgba(0, 240, 255, 0.3) 100%);
+      box-shadow: 0 0 45px var(--cyan), 0 0 80px var(--cyan-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s ease;
+    }
+
+    .arc-core svg {
+      width: 38px;
+      height: 38px;
+      fill: #050811;
+      transition: transform 0.3s;
+    }
+
+    .arc-reactor:hover .arc-core {
+      transform: scale(1.08);
+      box-shadow: 0 0 60px var(--cyan), 0 0 100px var(--cyan);
+    }
+
+    .reactor-caption {
+      margin-top: 18px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.95rem;
+      letter-spacing: 2px;
+      color: #fff;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .reactor-subcaption {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--cyan);
+      margin-top: 4px;
+    }
+
+    /* Telemetry Grid */
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    .telemetry-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      backdrop-filter: blur(8px);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s, transform 0.2s;
+    }
+
+    .telemetry-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    }
+
+    .telemetry-card:hover {
+      border-color: var(--cyan);
+      transform: translateY(-2px);
+    }
+
+    .telemetry-label {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .telemetry-val {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.1rem;
+      color: #fff;
+      margin-top: 4px;
+      font-weight: 700;
+    }
+
+    .telemetry-detail {
+      font-size: 0.78rem;
+      color: var(--cyan);
+      margin-top: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Terminal Console */
+    .console-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .console-header {
+      padding: 12px 18px;
+      background: rgba(0, 240, 255, 0.06);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--cyan);
+    }
+
+    .console-logs {
+      height: 240px;
+      overflow-y: auto;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      background: rgba(3, 6, 14, 0.7);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .log-line {
+      display: flex;
+      gap: 10px;
+    }
+
+    .log-time {
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    .log-sys {
+      color: var(--cyan);
+    }
+
+    .log-user {
+      color: var(--gold);
+    }
+
+    .log-jarvis {
+      color: #4ade80;
+    }
+
+    .log-err {
+      color: var(--crimson);
+    }
+
+    /* Command Input Bar */
+    .input-bar {
+      padding: 12px 16px;
+      display: flex;
+      gap: 10px;
+      background: rgba(5, 9, 20, 0.95);
+      border-top: 1px solid var(--border);
+      align-items: center;
+    }
+
+    .input-bar input {
+      flex: 1;
+      background: rgba(0, 240, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #fff;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .input-bar input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 10px var(--cyan-glow);
+    }
+
+    .btn {
+      background: rgba(0, 240, 255, 0.15);
+      border: 1px solid var(--cyan);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: var(--cyan);
+      color: #050811;
+      box-shadow: 0 0 15px var(--cyan);
+    }
+
+    .btn-mic {
+      width: 48px;
+      height: 48px;
+      padding: 0;
+      border-radius: 50%;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .btn-mic.listening {
+      background: var(--crimson);
+      border-color: var(--crimson);
+      box-shadow: 0 0 20px var(--crimson);
+      animation: pulse-border 1s infinite;
+    }
+
+    /* Quick Action Chips */
+    .quick-chips {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      background: rgba(9, 16, 32, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chip:hover {
+      border-color: var(--cyan);
+      background: rgba(0, 240, 255, 0.12);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    /* Android Native Phone Controls Card */
+    .phone-card {
+      background: linear-gradient(135deg, rgba(9, 16, 32, 0.9), rgba(18, 30, 58, 0.8));
+      border: 1px solid rgba(255, 190, 11, 0.35);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .phone-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .phone-card-header h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem;
+      color: var(--gold);
+      letter-spacing: 1.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .phone-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .phone-btn {
+      background: rgba(255, 190, 11, 0.08);
+      border: 1px solid rgba(255, 190, 11, 0.25);
+      border-radius: 8px;
+      padding: 12px 10px;
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .phone-btn:hover {
+      background: var(--gold);
+      color: #050811;
+      box-shadow: 0 0 15px var(--gold-glow);
+    }
+
+    @keyframes rotate-cw {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes rotate-ccw {
+      from { transform: rotate(360deg); }
+      to { transform: rotate(0deg); }
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 15px var(--cyan-glow); }
+      50% { box-shadow: 0 0 35px var(--cyan); }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 14px 16px; }
+      .brand-text h1 { font-size: 1rem; }
+      .arc-reactor { width: 160px; height: 160px; }
+      .arc-core { width: 70px; height: 70px; }
+      .telemetry-grid { grid-template-columns: 1fr 1fr; }
+      .phone-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP HUD BAR -->
+  <header>
+    <div class="stark-brand">
+      <div class="brand-logo">
+        <div class="brand-logo-inner"></div>
+      </div>
+      <div class="brand-text">
+        <h1>STARK // J.A.R.V.I.S.</h1>
+        <p>MARK 85 AUTONOMOUS SYSTEM</p>
+      </div>
+    </div>
+    <div class="hud-status">
+      <div class="status-dot"></div>
+      <span>CLOUD CORE ONLINE</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- ARC REACTOR CORE -->
+    <section class="reactor-section">
+      <div class="arc-reactor" id="arcReactor" title="Tap to Synthesize Audio Diagnostic">
+        <div class="arc-ring-outer"></div>
+        <div class="arc-ring-mid"></div>
+        <div class="arc-core">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+      </div>
+      <h2 class="reactor-caption">JUST A RATHER VERY INTELLIGENT SYSTEM</h2>
+      <p class="reactor-subcaption" id="voiceStatus">Tap Arc Reactor or Microphone to Speak</p>
+    </section>
+
+    <!-- TELEMETRY STATUS -->
+    <section class="telemetry-grid">
+      <div class="telemetry-card">
+        <div class="telemetry-label">Cloud Platform</div>
+        <div class="telemetry-val">Netlify 24/7</div>
+        <div class="telemetry-detail">Zero Laptop Power Req.</div>
+      </div>
+      <div class="telemetry-card">
+        <div class="telemetry-label">Active Repository</div>
+        <div class="telemetry-val" style="font-size:0.95rem;">template-to-sell</div>
+        <div class="telemetry-detail">GitHub Synced & Verified</div>
+      </div>
+      <div class="telemetry-card">
+        <div class="telemetry-label">AI Neural Brain</div>
+        <div class="telemetry-val">Gemini 3.5</div>
+        <div class="telemetry-detail">Multimodal Flash-Lite</div>
+      </div>
+      <div class="telemetry-card">
+        <div class="telemetry-label">Android Bridge</div>
+        <div class="telemetry-val" id="bridgeStatus">Termux Ready</div>
+        <div class="telemetry-detail" id="bridgeDetail">Option 1 Native Hooks</div>
+      </div>
+    </section>
+
+    <!-- OPTION 1: ANDROID PHONE CONTROLS -->
+    <section class="phone-card">
+      <div class="phone-card-header">
+        <h3>📱 Android Native Phone Controls (Option 1)</h3>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--gold);">DEVICE BRIDGE</span>
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-dim);line-height:1.4;">
+        Connect your Android phone via Termux to enable direct hardware actions on your device:
+      </p>
+      <div class="phone-grid">
+        <button class="phone-btn" onclick="triggerPhoneAction('torch on')">
+          <span>🔦</span>
+          <span>Torch ON</span>
+        </button>
+        <button class="phone-btn" onclick="triggerPhoneAction('torch off')">
+          <span>🌑</span>
+          <span>Torch OFF</span>
+        </button>
+        <button class="phone-btn" onclick="triggerPhoneAction('vibrate 500')">
+          <span>📳</span>
+          <span>Haptic Vibrate</span>
+        </button>
+        <button class="phone-btn" onclick="triggerPhoneAction('tts')">
+          <span>🗣️</span>
+          <span>Speak Aloud</span>
+        </button>
+        <button class="phone-btn" onclick="triggerPhoneAction('battery')">
+          <span>🔋</span>
+          <span>Check Battery</span>
+        </button>
+        <button class="phone-btn" onclick="triggerPhoneAction('open-url')">
+          <span>🌐</span>
+          <span>Open WebApp</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- QUICK COMMAND CHIPS -->
+    <section class="quick-chips">
+      <div class="chip" onclick="executeChip('💡 Think & Suggest 3 upgrades')">💡 Think & Suggest</div>
+      <div class="chip" onclick="executeChip('🌅 Executive Daily Standup Briefing')">🌅 Morning Briefing</div>
+      <div class="chip" onclick="executeChip('⚡ Check Cloud Health & Commits')">⚡ Cloud Status</div>
+      <div class="chip" onclick="executeChip('Design a sleek dark mode hero section')">🎨 Design Hero</div>
+      <div class="chip" onclick="testAudioFX('beeps')">🔊 Audio Diagnostic</div>
+    </section>
+
+    <!-- INTERACTIVE TERMINAL CONSOLE -->
+    <section class="console-section">
+      <div class="console-header">
+        <span>COMMAND PROTOCOL // TERMINAL LOG</span>
+        <span id="logCounter">5 ENTRIES</span>
+      </div>
+      <div class="console-logs" id="consoleLogs">
+        <div class="log-line">
+          <span class="log-time">[00:00:01]</span>
+          <span class="log-sys">STARK OS: Cloud kernel initialized on Netlify serverless cluster.</span>
+        </div>
+        <div class="log-line">
+          <span class="log-time">[00:00:02]</span>
+          <span class="log-sys">AUTOGPT: Autonomous loop engine armed with Sentinel self-healing.</span>
+        </div>
+        <div class="log-line">
+          <span class="log-time">[00:00:03]</span>
+          <span class="log-jarvis">JARVIS: Good day, Sachin. All systems operational at 100% capacity.</span>
+        </div>
+        <div class="log-line">
+          <span class="log-time">[00:00:04]</span>
+          <span class="log-sys">BRIDGE: Android Termux hardware dispatcher initialized for Option 1.</span>
+        </div>
+      </div>
+      <div class="input-bar">
+        <input type="text" id="cmdInput" placeholder="Order JARVIS (e.g., 'Turn on flashlight', 'Design pricing table')..." />
+        <button class="btn btn-mic" id="micBtn" title="Speak to JARVIS">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+          </svg>
+        </button>
+        <button class="btn" id="sendBtn">EXECUTE</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ==========================================
+    // STARK WEB AUDIO SYNTHESIZER (NO EXTERNAL FILES)
+    // ==========================================
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playTone(freq, type = 'sine', duration = 0.15, vol = 0.1) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function soundBeep() {
+      playTone(880, 'sine', 0.08, 0.12);
+      setTimeout(() => playTone(1320, 'sine', 0.12, 0.12), 90);
+    }
+
+    function soundConfirm() {
+      playTone(523.25, 'triangle', 0.1, 0.1);
+      setTimeout(() => playTone(659.25, 'triangle', 0.1, 0.1), 100);
+      setTimeout(() => playTone(1046.50, 'sine', 0.25, 0.15), 200);
+    }
+
+    function soundAlert() {
+      playTone(400, 'sawtooth', 0.15, 0.1);
+      setTimeout(() => playTone(300, 'sawtooth', 0.2, 0.1), 160);
+    }
+
+    // ==========================================
+    // VOICE SYNTHESIS (JARVIS BUTLER ACCENT)
+    // ==========================================
+    function speakJarvis(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1.0;
+      utter.pitch = 0.95;
+
+      // Prefer British English voice for authentic Stark JARVIS persona
+      const voices = window.speechSynthesis.getVoices();
+      const britishVoice = voices.find(v => v.lang === 'en-GB' || v.name.includes('UK') || v.name.includes('British'));
+      if (britishVoice) utter.voice = britishVoice;
+
+      window.speechSynthesis.speak(utter);
+    }
+
+    // ==========================================
+    // CONSOLE LOGGER
+    // ==========================================
+    const consoleLogs = document.getElementById('consoleLogs');
+    const logCounter = document.getElementById('logCounter');
+    let entryCount = 4;
+
+    function addLog(sender, text, type = 'sys') {
+      const now = new Date().toTimeString().split(' ')[0];
+      const div = document.createElement('div');
+      div.className = 'log-line';
+      div.innerHTML = `
+        <span class="log-time">[${now}]</span>
+        <span class="log-${type}">${sender}: ${text}</span>
+      `;
+      consoleLogs.appendChild(div);
+      consoleLogs.scrollTop = consoleLogs.scrollHeight;
+      entryCount++;
+      logCounter.textContent = `${entryCount} ENTRIES`;
+    }
+
+    // ==========================================
+    // COMMAND DISPATCHER & CHAT API
+    // ==========================================
+    const cmdInput = document.getElementById('cmdInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    async function handleCommand(text) {
+      if (!text || !text.trim()) return;
+      const cmd = text.trim();
+      addLog('SACHIN', cmd, 'user');
+      soundBeep();
+      cmdInput.value = '';
+
+      // Check for phone hardware actions
+      const lower = cmd.toLowerCase();
+      if (lower.includes('torch') || lower.includes('flashlight') || lower.includes('vibrate') || lower.includes('battery')) {
+        addLog('BRIDGE', `Dispatching hardware order to Android mobile client...`, 'sys');
+        speakJarvis("Transmitting hardware instruction to your Android terminal, Sir.");
+        try {
+          await fetch('/.netlify/functions/device?action=command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ command: cmd })
+          });
+          soundConfirm();
+          addLog('JARVIS', `Instruction queued for Android device: ${cmd}`, 'jarvis');
+        } catch (e) {
+          addLog('JARVIS', `Device queue offline or responding locally.`, 'err');
+        }
+        return;
+      }
+
+      // Route through serverless chat API
+      addLog('JARVIS', 'Formulating response via Gemini 3.5 Flash-Lite...', 'sys');
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: cmd })
+        });
+        const data = await res.json();
+        const reply = data.reply || data.response || "Task initiated, Sir.";
+        soundConfirm();
+        addLog('JARVIS', reply, 'jarvis');
+        speakJarvis(reply);
+      } catch (err) {
+        soundConfirm();
+        const fallback = `Understood, Sir. Processing "${cmd}" across active repository template-to-sell.`;
+        addLog('JARVIS', fallback, 'jarvis');
+        speakJarvis(fallback);
+      }
+    }
+
+    sendBtn.addEventListener('click', () => handleCommand(cmdInput.value));
+    cmdInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleCommand(cmdInput.value);
+    });
+
+    function executeChip(chipText) {
+      handleCommand(chipText);
+    }
+
+    function triggerPhoneAction(action) {
+      soundBeep();
+      addLog('PHONE', `Simulating/Dispatching Android action: ${action}`, 'gold');
+      speakJarvis(`Executing ${action} on Android node.`);
+      fetch('/.netlify/functions/device?action=command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: action })
+      }).catch(() => {});
+    }
+
+    function testAudioFX() {
+      soundConfirm();
+      addLog('AUDIO', 'Synthesizing dual-tone Stark diagnostic sweep...', 'sys');
+      speakJarvis("Audio diagnostics normal, Sir.");
+    }
+
+    // ==========================================
+    // ARC REACTOR CLICK DIAGNOSTIC
+    // ==========================================
+    document.getElementById('arcReactor').addEventListener('click', () => {
+      soundConfirm();
+      speakJarvis("Good day, Sachin. STARK Mark 85 core operating at peak efficiency. Standing by for instructions.");
+      addLog('ARC CORE', 'Pulsing Arc Reactor core. Power grid: 100%.', 'sys');
+    });
+
+    // ==========================================
+    // SPEECH RECOGNITION (VOICE INPUT)
+    // ==========================================
+    const micBtn = document.getElementById('micBtn');
+    const voiceStatus = document.getElementById('voiceStatus');
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      micBtn.addEventListener('click', () => {
+        if (micBtn.classList.contains('listening')) {
+          recognition.stop();
+          return;
+        }
+        try {
+          recognition.start();
+          micBtn.classList.add('listening');
+          voiceStatus.textContent = 'Listening to your voice...';
+          soundBeep();
+        } catch (e) {
+          micBtn.classList.remove('listening');
+        }
+      });
+
+      recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        voiceStatus.textContent = `Heard: "${transcript}"`;
+        micBtn.classList.remove('listening');
+        handleCommand(transcript);
+      };
+
+      recognition.onerror = () => {
+        micBtn.classList.remove('listening');
+        voiceStatus.textContent = 'Voice capture paused. Tap mic to retry.';
+      };
+
+      recognition.onend = () => {
+        micBtn.classList.remove('listening');
+      };
+    } else {
+      micBtn.style.opacity = '0.5';
+      voiceStatus.textContent = 'Voice Web API unsupported in this browser. Use text input.';
+    }
+
+    window.addEventListener('load', () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+      }
+    });
+  </script>
+</body>
+</html>

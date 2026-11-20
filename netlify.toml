@@ -15,6 +15,21 @@
   to = "/.netlify/functions/jarvis-background"
   status = 200
 
+[[redirects]]
+  from = "/api/device"
+  to = "/.netlify/functions/device"
+  status = 200
+
+[[redirects]]
+  from = "/hud"
+  to = "/hud.html"
+  status = 200
+
+[[redirects]]
+  from = "/jarvis"
+  to = "/hud.html"
+  status = 200
+
 [[headers]]
   for = "/*"
   [headers.values]
