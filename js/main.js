@@ -1,893 +1,85 @@
 /**
- * ============================================================================
- * AETHER ATELIER // HIGH-CONVERTING SOCIAL MEDIA & CREATIVE STUDIO TEMPLATE
- * Complete Production Script: GSAP 3 Animations, Interactive Filters,
- * Hot Take Generator, Interactive DM FAQ, Mobile Drawer, and Lead Integration
- * ============================================================================
+ * AETHER ATELIER // HIGH-CONVERTING CREATIVE DIRECTION & SOCIAL ARCHITECTURE
+ * Core Interactive Controller & Motion Runtime
+ * Powered by GSAP 3 & ScrollTrigger
  */
 
 document.addEventListener("DOMContentLoaded", () => {
-
-  // --------------------------------------------------------------------------
-  // 1. GSAP 3 ENTRANCE & SCROLL ANIMATIONS (Design-Taste-Frontend Compliant)
-  // --------------------------------------------------------------------------
-  if (typeof gsap !== "undefined") {
-    if (typeof ScrollTrigger !== "undefined") {
-      gsap.registerPlugin(ScrollTrigger);
-    }
-
-    // Hero Entrance
-    const heroTl = gsap.timeline({ defaults: { ease: "power3.out", duration: 0.9 } });
-    
-    heroTl.from("header nav", {
-      y: -25,
-      opacity: 0,
-      duration: 0.8,
-      delay: 0.1
-    })
-    .from("#hero h1", {
-      y: 35,
-      opacity: 0,
-      duration: 0.9
-    }, "-=0.5")
-    .from("#hero p", {
-      y: 20,
-      opacity: 0,
-      duration: 0.7
-    }, "-=0.6")
-    .from("#hero img", {
-      scale: 0.95,
-      opacity: 0,
-      stagger: 0.08,
-      duration: 0.8
-    }, "-=0.5");
-
-    // Scroll-triggered section reveals
-    if (typeof ScrollTrigger !== "undefined") {
-      gsap.utils.toArray("section").forEach((sec) => {
-        const heading = sec.querySelector("h2");
-        if (heading) {
-          gsap.from(heading, {
-            scrollTrigger: {
-              trigger: sec,
-              start: "top 85%",
-              toggleActions: "play none none none"
-            },
-            y: 30,
-            opacity: 0,
-            duration: 0.8,
-            ease: "power2.out"
-          });
-        }
-      });
-    }
-
-    // Quiet micro-interactions (Rule 5: Card hover lift 2px)
-    const hoverCards = document.querySelectorAll(".card-taste, .group, .rounded-2xl, .rounded-3xl");
-    hoverCards.forEach((card) => {
-      card.addEventListener("mouseenter", () => {
-        gsap.to(card, { y: -2, duration: 0.2, ease: "power2.out" });
-      });
-      card.addEventListener("mouseleave", () => {
-        gsap.to(card, { y: 0, duration: 0.2, ease: "power2.out" });
-      });
-    });
+  // Register GSAP ScrollTrigger if available
+  if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
+    gsap.registerPlugin(ScrollTrigger);
   }
 
   // --------------------------------------------------------------------------
-  // 2. STICKY HEADER INTELLIGENCE & SMOOTH IN-PAGE ANCHOR SCROLLING
+  // 1. MOBILE DRAWER NAVIGATION
   // --------------------------------------------------------------------------
-  const header = document.querySelector("header");
-  window.addEventListener("scroll", () => {
-    if (header) {
-      if (window.scrollY > 80) {
-        header.classList.add("header-scrolled");
-      } else {
-        header.classList.remove("header-scrolled");
-      }
-    }
-  }, { passive: true });
-
-  // Smooth scroll handler for all in-page hash links
-  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-    anchor.addEventListener("click", function (e) {
-      const targetId = this.getAttribute("href");
-      if (!targetId || targetId === "#") return;
-      const targetEl = document.querySelector(targetId);
-      if (targetEl) {
-        e.preventDefault();
-        targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    });
-  });
-
-  // --------------------------------------------------------------------------
-  // 3. MOBILE MENU DRAWER CONTROLLER
-  // --------------------------------------------------------------------------
-  const mobileMenuBtn = document.querySelector('button[aria-controls="mobile-menu"]');
+  const mobileMenuBtn = document.getElementById("mobile-menu-btn");
   const mobileMenu = document.getElementById("mobile-menu");
-
-  function openMobileMenu() {
-    if (!mobileMenu || !mobileMenuBtn) return;
-    mobileMenuBtn.setAttribute("aria-expanded", "true");
-    mobileMenu.classList.add("menu-open");
-    mobileMenu.removeAttribute("inert");
-    document.body.style.overflow = "hidden";
-  }
-
-  function closeMobileMenu() {
-    if (!mobileMenu || !mobileMenuBtn) return;
-    mobileMenuBtn.setAttribute("aria-expanded", "false");
-    mobileMenu.classList.remove("menu-open");
-    mobileMenu.setAttribute("inert", "");
-    document.body.style.overflow = "";
-  }
+  const burgerLine1 = document.getElementById("burger-line-1");
+  const burgerLine2 = document.getElementById("burger-line-2");
 
   if (mobileMenuBtn && mobileMenu) {
-    mobileMenuBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const isExpanded = mobileMenuBtn.getAttribute("aria-expanded") === "true";
-      if (isExpanded) {
-        closeMobileMenu();
-      } else {
-        openMobileMenu();
-      }
-    });
+    let isOpen = false;
 
-    // Auto-close menu when clicking any link inside the mobile drawer
+    function toggleMenu() {
+      isOpen = !isOpen;
+      mobileMenuBtn.setAttribute("aria-expanded", String(isOpen));
+
+      if (isOpen) {
+        mobileMenu.classList.remove("hidden-drawer");
+        mobileMenu.classList.add("open-drawer");
+        if (burgerLine1 && burgerLine2) {
+          burgerLine1.style.transform = "translateY(5px) rotate(45deg)";
+          burgerLine2.style.transform = "translateY(-5px) rotate(-45deg)";
+        }
+      } else {
+        mobileMenu.classList.remove("open-drawer");
+        mobileMenu.classList.add("hidden-drawer");
+        if (burgerLine1 && burgerLine2) {
+          burgerLine1.style.transform = "none";
+          burgerLine2.style.transform = "none";
+        }
+      }
+    }
+
+    mobileMenuBtn.addEventListener("click", toggleMenu);
+
+    // Auto close on clicking any link inside
     mobileMenu.querySelectorAll("a").forEach((link) => {
       link.addEventListener("click", () => {
-        closeMobileMenu();
-      });
-    });
-
-    // Close on Escape key press
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && mobileMenuBtn.getAttribute("aria-expanded") === "true") {
-        closeMobileMenu();
-      }
-    });
-  }
-
-  // --------------------------------------------------------------------------
-  // 4. PLATFORM PLAYGROUND INTERACTIVE TABS (#platform-playground)
-  // --------------------------------------------------------------------------
-  const platformTabs = document.querySelectorAll('#platform-playground [role="tab"]');
-  const platformPanels = document.querySelectorAll('#platform-playground [role="tabpanel"]');
-
-  if (platformTabs.length > 0) {
-    platformTabs.forEach((tab) => {
-      tab.addEventListener("click", () => {
-        const targetPanelId = tab.getAttribute("aria-controls");
-        
-        // Reset all tabs
-        platformTabs.forEach((t) => {
-          t.setAttribute("aria-selected", "false");
-          t.setAttribute("tabindex", "-1");
-          t.classList.remove("bg-ink", "text-cream", "border-ink");
-          t.classList.add("border-ink/15", "bg-paper/60", "text-ink");
-        });
-
-        // Set active tab
-        tab.setAttribute("aria-selected", "true");
-        tab.setAttribute("tabindex", "0");
-        tab.classList.remove("border-ink/15", "bg-paper/60", "text-ink");
-        tab.classList.add("bg-ink", "text-cream", "border-ink");
-
-        // Switch panels
-        platformPanels.forEach((panel) => {
-          if (panel.id === targetPanelId) {
-            panel.classList.remove("hidden");
-            if (typeof gsap !== "undefined") {
-              gsap.fromTo(panel, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" });
-            }
-          } else {
-            panel.classList.add("hidden");
-          }
-        });
+        if (isOpen) toggleMenu();
       });
     });
   }
 
   // --------------------------------------------------------------------------
-  // 5. HOT TAKE GENERATOR WIDGET (#hot-takes)
+  // 2. THE EDITORIAL MANIFESTO: WORD-BY-WORD SCROLL ILLUMINATION
   // --------------------------------------------------------------------------
-  const industryTakes = {
-    fashion: [
-      "Drop culture is dead. Teach your customers how to mend and style what they already bought.",
-      "Show the factory floor and the stitch count. Transparency is the only luxury left in 2026.",
-      "Stop hiring 20-year-old runway models for cashmere coats purchased by 45-year-old directors."
-    ],
-    food: [
-      "Name your sourdough starter and give it a weekly update.",
-      "Stop shooting slow-motion cheese pulls. Show the chef arguing with the tomato supplier.",
-      "Your packaging is cute, but your unboxing video shouldn't take longer than eating the meal."
-    ],
-    tech: [
-      "Your founder's face is 10x more trustworthy than your 3D product render.",
-      "B2B software doesn't need stock photos of handshakes. It needs a 12-second screen recording of pain solved.",
-      "If your product tour requires an account executive to explain, your UX is the problem."
-    ],
-    beauty: [
-      "Stop filtering your model's skin texture. In 2026, raw pores sell out retinols.",
-      "Before-and-after photos without clinical timeline stamps look like Photoshop scams.",
-      "Talk about your formula's smell. Nobody buys moisturizer solely for the molecular weight."
-    ],
-    fitness: [
-      "Nobody cares about your 5 AM alarm. Show the workout you did when you didn't feel like it.",
-      "Stop selling discipline to people who need recovery and sleep.",
-      "Form breakdowns beat motivational monologues every single Tuesday."
-    ],
-    lifestyle: [
-      "Boring B2B is a choice. The algorithms reward personality, not corporate jargon.",
-      "A 15-second phone video with good lighting outperforms a $20,000 commercial 4 times out of 5.",
-      "Consistency without point-of-view is just noise. Say what your competitors are too polite to admit."
-    ]
-  };
-
-  const hotTakeSection = document.getElementById("hot-takes");
-  if (hotTakeSection) {
-    const industryPills = hotTakeSection.querySelectorAll('[role="radio"]');
-    const quotePara = hotTakeSection.querySelector("p[aria-live='polite']");
-    const subheaderSpan = hotTakeSection.querySelector(".flex.items-center.justify-between.font-mono span:first-child");
-    
-    // Find Steal This and Shuffle buttons
-    const actionButtons = hotTakeSection.querySelectorAll(".flex.flex-wrap.items-center.gap-3 button");
-    const stealBtn = actionButtons[0];
-    const shuffleBtn = actionButtons[1];
-
-    let currentIndustry = "food";
-    let takeIndex = 0;
-
-    function renderCurrentTake() {
-      const takes = industryTakes[currentIndustry] || industryTakes.food;
-      const currentTake = takes[takeIndex % takes.length];
-      const takeNumber = String((takeIndex % takes.length) + 1).padStart(2, "0");
-      const capitalizedIndustry = currentIndustry.charAt(0).toUpperCase() + currentIndustry.slice(1);
-
-      if (subheaderSpan) {
-        subheaderSpan.innerHTML = `Hot take no. ${takeNumber} · ${capitalizedIndustry}`;
-      }
-
-      if (quotePara) {
-        if (typeof gsap !== "undefined") {
-          gsap.to(quotePara, {
-            opacity: 0,
-            y: -8,
-            duration: 0.18,
-            onComplete: () => {
-              quotePara.textContent = currentTake;
-              gsap.to(quotePara, { opacity: 1, y: 0, duration: 0.28, ease: "power2.out" });
-            }
-          });
-        } else {
-          quotePara.textContent = currentTake;
-        }
-      }
-    }
-
-    // Industry radio pills click
-    industryPills.forEach((pill) => {
-      pill.addEventListener("click", () => {
-        const ind = pill.textContent.trim().toLowerCase();
-        if (industryTakes[ind]) {
-          currentIndustry = ind;
-          takeIndex = 0;
-
-          // Update active pill styling
-          industryPills.forEach((p) => {
-            p.setAttribute("aria-checked", "false");
-            p.classList.remove("border-ink", "bg-ink", "text-cream");
-            p.classList.add("border-ink/15", "text-ink");
-          });
-
-          pill.setAttribute("aria-checked", "true");
-          pill.classList.remove("border-ink/15", "text-ink");
-          pill.classList.add("border-ink", "bg-ink", "text-cream");
-
-          renderCurrentTake();
-        }
-      });
-    });
-
-    // Shuffle button click
-    if (shuffleBtn) {
-      shuffleBtn.addEventListener("click", () => {
-        takeIndex++;
-        renderCurrentTake();
-        if (typeof gsap !== "undefined") {
-          gsap.fromTo(shuffleBtn, { rotate: 0 }, { rotate: 180, duration: 0.35, ease: "back.out(1.5)" });
-        }
-      });
-    }
-
-    // Steal this (copy to clipboard) click
-    if (stealBtn) {
-      const originalHtml = stealBtn.innerHTML;
-      stealBtn.addEventListener("click", async () => {
-        const textToCopy = quotePara ? quotePara.textContent.trim() : "";
-        if (textToCopy) {
-          try {
-            await navigator.clipboard.writeText(textToCopy);
-            stealBtn.innerHTML = `
-              <svg class="size-4 text-volt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              <span>Copied!</span>
-            `;
-            setTimeout(() => {
-              stealBtn.innerHTML = originalHtml;
-            }, 2200);
-          } catch (err) {
-            console.warn("Clipboard access denied", err);
-          }
-        }
-      });
-    }
-  }
-
-  // --------------------------------------------------------------------------
-  // 6. INTERACTIVE FAQ DM SYSTEM (#faq)
-  // --------------------------------------------------------------------------
-  const faqData = [
-    {
-      id: 0,
-      sender: "Priya, a candle brand",
-      initial: "P",
-      q: "How fast can you start?",
-      a: "Usually within two weeks. The first week is a forecast: we read your accounts, your category and your audience, then come back with a plan. The second week we shoot."
-    },
-    {
-      id: 1,
-      sender: "Tom, a cycling shop",
-      initial: "T",
-      q: "Do you only do TikTok?",
-      a: "No. We cut for wherever attention is cheapest for your brand: TikTok, Instagram Reels, YouTube Shorts, and LinkedIn video. One shoot feeds four distribution engines."
-    },
-    {
-      id: 2,
-      sender: "Grace, a skincare startup",
-      initial: "G",
-      q: "Will it still sound like us?",
-      a: "Always. We interview you and your customers on day one to build a voice bible. If a line feels like generic influencer marketing, it gets killed before filming."
-    },
-    {
-      id: 3,
-      sender: "Jonah, a bakery",
-      initial: "J",
-      q: "What does a forecast actually include?",
-      a: "A teardown of your current engagement, competitor vulnerability audits, 30 bespoke content concepts, and exact shooting scripts with hook variations."
-    },
-    {
-      id: 4,
-      sender: "Elif, a fashion label",
-      initial: "E",
-      q: "Do we have to sign a long contract?",
-      a: "Never. We work on month-to-month retainers. If the content isn't generating qualified reach and revenue after 60 days, you can walk away with zero friction."
-    },
-    {
-      id: 5,
-      sender: "Sam, a tech founder",
-      initial: "S",
-      q: "Can we be in the videos?",
-      a: "We prefer it. Founder-led content converts significantly higher than anonymous stock b-roll. We coach you through delivery until you look natural and authoritative on camera."
-    }
-  ];
-
-  const faqSection = document.getElementById("faq");
-  if (faqSection) {
-    const faqButtons = faqSection.querySelectorAll('ul li button');
-    const faqPane = document.getElementById("faq-pane");
-
-    faqButtons.forEach((btn, index) => {
-      btn.addEventListener("click", () => {
-        const item = faqData[index];
-        if (!item) return;
-
-        // 1. Update Sender List Buttons Active States
-        faqButtons.forEach((b) => {
-          b.setAttribute("aria-expanded", "false");
-          b.classList.remove("bg-sand");
-          b.classList.add("hover:bg-sand/60");
-        });
-
-        btn.setAttribute("aria-expanded", "true");
-        btn.classList.add("bg-sand");
-        btn.classList.remove("hover:bg-sand/60");
-
-        // Remove unread dot if present
-        const unreadDot = btn.querySelector(".bg-ember.rounded-full");
-        if (unreadDot) unreadDot.remove();
-
-        // 2. Desktop Pane Update
-        if (faqPane) {
-          const newPaneHtml = `
-            <div class="flex flex-col gap-4">
-              <div class="flex flex-col items-end">
-                <p class="max-w-[85%] rounded-2xl rounded-br-md bg-ink px-4 py-3 text-[15px] leading-snug text-cream">${item.q}</p>
-                <span class="mt-1.5 flex items-center gap-1 font-mono text-[10px] text-stone">
-                  <svg class="size-3.5 text-volt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 7 17l-5-5"></path><path d="m22 10-7.5 7.5L13 16"></path></svg>Seen
-                </span>
-              </div>
-              <div class="flex items-end gap-2.5">
-                <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-ember font-heading text-xs font-bold text-ink">U</span>
-                <p class="max-w-[85%] rounded-2xl rounded-bl-md bg-paper px-4 py-3 text-[15px] leading-relaxed text-ink shadow-[0_10px_24px_-18px_rgb(30_30_30/0.45)]">
-                  <span>${item.a}</span>
-                  <span aria-hidden="true"><span class="ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-blink bg-ember"></span></span>
-                </p>
-              </div>
-            </div>
-          `;
-
-          if (typeof gsap !== "undefined") {
-            gsap.to(faqPane, {
-              opacity: 0,
-              y: 8,
-              duration: 0.18,
-              onComplete: () => {
-                faqPane.innerHTML = newPaneHtml;
-                gsap.to(faqPane, { opacity: 1, y: 0, duration: 0.28, ease: "power2.out" });
-              }
-            });
-          } else {
-            faqPane.innerHTML = newPaneHtml;
-          }
-        }
-
-        // 3. Mobile Accordion Toggle
-        for (let i = 0; i < faqData.length; i++) {
-          const mobileAns = document.getElementById(`faq-answer-${i}`);
-          if (mobileAns) {
-            if (i === index) {
-              const isHidden = mobileAns.classList.contains("hidden");
-              if (isHidden) {
-                mobileAns.classList.remove("hidden");
-              } else {
-                mobileAns.classList.add("hidden");
-              }
-            } else {
-              mobileAns.classList.add("hidden");
-            }
-          }
-        }
-      });
-    });
-  }
-
-  // --------------------------------------------------------------------------
-  // 7. FORM SUBMISSION & FEEDBACK (PHP & NETLIFY HYBRID)
-  // --------------------------------------------------------------------------
-  const forms = document.querySelectorAll("form");
-  forms.forEach((form) => {
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const submitBtn = form.querySelector("button[type='submit']") || form.querySelector("button");
-      const emailInput = form.querySelector("input[type='email']");
-      const emailVal = emailInput ? emailInput.value.trim() : "";
-
-      if (!emailVal) return;
-
-      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : "Submit";
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `<span>Sending...</span>`;
-      }
-
-      try {
-        const res = await fetch("api/contact.php", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: emailVal, source: "homepage" })
-        });
-
-        const data = await res.json().catch(() => ({ success: true }));
-
-        if (submitBtn) {
-          submitBtn.innerHTML = `<span style="color: #10B981; font-weight: 600;">✓ Forecast Requested!</span>`;
-          setTimeout(() => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnHtml;
-            if (emailInput) emailInput.value = "";
-          }, 4000);
-        }
-      } catch (err) {
-        // Fallback for static host
-        if (submitBtn) {
-          submitBtn.innerHTML = `<span style="color: #10B981; font-weight: 600;">✓ Forecast Requested!</span>`;
-          setTimeout(() => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnHtml;
-            if (emailInput) emailInput.value = "";
-          }, 4000);
-        }
-      }
-    });
-  });
-
-  
-  // --------------------------------------------------------------------------
-  // 8. POST TIME MACHINE INTERACTIVE CONTROLLER (#post-time-machine)
-  // --------------------------------------------------------------------------
-  const postTimeMachineData = {
-    fashion: {
-      title: "Fashion, next week",
-      tip: "Tip: Wed at 18:42 is quiet in your category. That is where we would put the big one.",
-      schedule: [
-        { day: "Mon", tag: "Carousel", tagBg: "bg-ink text-cream", title: "Five ways to wear one coat, ranked by our intern", time: "12:30" },
-        { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "Poll: cuffs rolled or down?", time: "08:15" },
-        { day: "Wed", tag: "Reel", tagBg: "bg-ember text-white", title: "The coat, ten years later", time: "18:42" },
-        { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "Wearer of the week: Priya in Leeds", time: "13:00" },
-        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-white", title: "Packing for a weekend in one bag", time: "17:20" },
-        { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Studio sale, open the boxes with us", time: "11:00" },
-        { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Repair clinic questions, answered", time: "19:30" }
-      ]
-    },
-    food: {
-      title: "Food, next week",
-      tip: "Tip: Fri at 19:15 is dinner rush. That is when we drop the kitchen prep video.",
-      schedule: [
-        { day: "Mon", tag: "Reel", tagBg: "bg-ember text-white", title: "The sourdough starter, day 14 progress", time: "09:00" },
-        { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "Blind taste test: cheap vs heirloom olive oil", time: "11:30" },
-        { day: "Wed", tag: "Carousel", tagBg: "bg-ink text-cream", title: "How to reheat pizza without rubber crust", time: "14:00" },
-        { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "The burnt Basque cheesecake fresh from oven", time: "15:45" },
-        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-white", title: "Friday night service: 45 tickets in 8 minutes", time: "19:15" },
-        { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Morning farmer market walk with Chef Marco", time: "08:30" },
-        { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Sunday roast prep checklist & wine pairing", time: "17:00" }
-      ]
-    },
-    tech: {
-      title: "Tech, next week",
-      tip: "Tip: Tue at 10:00 is when founders check feeds. That is where we drop the teardown.",
-      schedule: [
-        { day: "Mon", tag: "Carousel", tagBg: "bg-ink text-cream", title: "The 3 onboarding mistakes killing SaaS activation", time: "10:00" },
-        { day: "Tue", tag: "Reel", tagBg: "bg-ember text-white", title: "Founder breaks down the bug that melted prod", time: "14:20" },
-        { day: "Wed", tag: "Shorts", tagBg: "bg-ember text-white", title: "12-second UI micro-interaction breakdown", time: "11:00" },
-        { day: "Thu", tag: "Post", tagBg: "bg-sand text-ink", title: "Why we deleted our AI feature after 14 days", time: "09:30" },
-        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-white", title: "Inside our real revenue dashboard: $52k MRR", time: "16:00" },
-        { day: "Sat", tag: "Story", tagBg: "bg-butter text-ink", title: "Weekend hackathon poll: what should we ship?", time: "12:00" },
-        { day: "Sun", tag: "Carousel", tagBg: "bg-ink text-cream", title: "7 open-source tools our engineers swear by", time: "18:00" }
-      ]
-    },
-    beauty: {
-      title: "Beauty, next week",
-      tip: "Tip: Sun at 20:00 is nighttime ritual scroll. Perfect for raw texture demos.",
-      schedule: [
-        { day: "Mon", tag: "Reel", tagBg: "bg-ember text-white", title: "Skin texture in 4K: why we banned blur filters", time: "08:45" },
-        { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "AM vs PM routine order: what goes first?", time: "09:15" },
-        { day: "Wed", tag: "Carousel", tagBg: "bg-ink text-cream", title: "The 3 ingredients backed by clinical peer review", time: "13:30" },
-        { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "Batch 04 bottle design with weighted glass", time: "16:00" },
-        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-white", title: "5-minute commute makeup: real sunlight test", time: "17:45" },
-        { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Derm Q&A: what to use when your skin barrier stings", time: "11:30" },
-        { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Sunday reset: wash your makeup brushes with us", time: "20:00" }
-      ]
-    },
-    fitness: {
-      title: "Fitness, next week",
-      tip: "Tip: Mon at 06:30 is high motivation hour. Drop the form breakdown here.",
-      schedule: [
-        { day: "Mon", tag: "Reel", tagBg: "bg-ember text-white", title: "Stop doing squats like this: 2-degree hip fix", time: "06:30" },
-        { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "Quick vote: high bar or low bar for mobility?", time: "08:00" },
-        { day: "Wed", tag: "Carousel", tagBg: "bg-ink text-cream", title: "Five shoulder warmups for people at desks", time: "12:15" },
-        { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "Client progression: 6 months of consistency", time: "15:00" },
-        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-white", title: "The workout you do when you have 22 minutes", time: "17:30" },
-        { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Saturday morning deadlift form clinic", time: "09:00" },
-        { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Recovery Sunday: 10-minute hip opening sequence", time: "18:45" }
-      ]
-    },
-    lifestyle: {
-      title: "Lifestyle, next week",
-      tip: "Tip: Thu at 21:00 is decompression scroll. Best for narrative photo essays.",
-      schedule: [
-        { day: "Mon", tag: "Carousel", tagBg: "bg-ink text-cream", title: "A quiet morning in Lisbon: 8 35mm film frames", time: "08:30" },
-        { day: "Tue", tag: "Story", tagBg: "bg-butter text-ink", title: "Which desk setup feels calmer to work from?", time: "10:15" },
-        { day: "Wed", tag: "Reel", tagBg: "bg-ember text-white", title: "Building a ceramic mug from raw clay to kiln", time: "14:45" },
-        { day: "Thu", tag: "Photo", tagBg: "bg-sand text-ink", title: "Late afternoon light through linen curtains", time: "21:00" },
-        { day: "Fri", tag: "Reel", tagBg: "bg-ember text-white", title: "Pack with me for 48 hours in Kyoto with one tote", time: "16:30" },
-        { day: "Sat", tag: "Live", tagBg: "bg-[#ff3b30] text-white", title: "Studio coffee brew and soundtrack listening", time: "10:00" },
-        { day: "Sun", tag: "Story", tagBg: "bg-butter text-ink", title: "Books we finished this month with one-line notes", time: "19:15" }
-      ]
-    }
-  };
-
-  const tmSection = document.getElementById("post-time-machine");
-  if (tmSection) {
-    const industryButtons = tmSection.querySelectorAll('[role="radio"]');
-    const phoneTitle = document.getElementById("phone-title");
-    const phoneProgress = document.getElementById("phone-progress");
-    const phoneList = document.getElementById("phone-list");
-    const industryTip = document.getElementById("industry-tip");
-    const replayBtn = tmSection.querySelector("button:has(svg.lucide-rotate-ccw), button.mt-6");
-
-    function renderTimeMachine(industryKey, animate = true) {
-      const data = postTimeMachineData[industryKey] || postTimeMachineData.fashion;
-
-      if (phoneTitle) phoneTitle.textContent = data.title;
-      if (industryTip) industryTip.textContent = data.tip;
-
-      if (phoneList) {
-        phoneList.innerHTML = data.schedule.map((item) => `
-          <li class="flex items-start gap-2.5 rounded-xl border border-ink/[0.07] bg-cream/70 px-2.5 py-2">
-            <span class="w-8 shrink-0 pt-0.5 font-mono text-[10px] font-medium uppercase text-stone">${item.day}</span>
-            <span class="min-w-0 flex-1">
-              <span class="inline-block rounded-full px-1.5 py-px font-mono text-[9px] uppercase tracking-[0.08em] ${item.tagBg}">${item.tag}</span>
-              <span class="mt-0.5 block truncate text-[12px] font-medium leading-snug">${item.title}</span>
-            </span>
-            <span class="inline-flex shrink-0 items-center gap-1 pt-0.5 font-mono text-[10px] text-ink/70">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock3 size-3">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16.5 12"></polyline>
-              </svg>
-              ${item.time}
-            </span>
-          </li>
-        `).join("");
-
-        if (animate && typeof gsap !== "undefined") {
-          gsap.fromTo(phoneList.children, 
-            { opacity: 0, x: 20 },
-            { opacity: 1, x: 0, stagger: 0.05, duration: 0.3, ease: "power2.out" }
-          );
-        }
-      }
-
-      if (phoneProgress) {
-        if (animate && typeof gsap !== "undefined") {
-          gsap.fromTo(phoneProgress, { width: "0%" }, { width: "100%", duration: 0.6, ease: "power1.inOut" });
-        } else {
-          phoneProgress.style.width = "100%";
-        }
-      }
-    }
-
-    industryButtons.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const key = btn.textContent.trim().toLowerCase();
-        if (postTimeMachineData[key]) {
-          industryButtons.forEach((b) => {
-            b.setAttribute("aria-checked", "false");
-            b.classList.remove("border-ember", "bg-ember", "text-ink");
-            b.classList.add("border-cream/20", "text-cream");
-          });
-
-          btn.setAttribute("aria-checked", "true");
-          btn.classList.remove("border-cream/20", "text-cream");
-          btn.classList.add("border-ember", "bg-ember", "text-ink");
-
-          renderTimeMachine(key, true);
-        }
-      });
-    });
-
-    if (replayBtn) {
-      replayBtn.addEventListener("click", () => {
-        const activeBtn = tmSection.querySelector('[role="radio"][aria-checked="true"]') || industryButtons[0];
-        const key = activeBtn ? activeBtn.textContent.trim().toLowerCase() : "fashion";
-        if (typeof gsap !== "undefined") {
-          const icon = replayBtn.querySelector("svg");
-          if (icon) gsap.fromTo(icon, { rotate: 0 }, { rotate: -360, duration: 0.5, ease: "power2.out" });
-        }
-        renderTimeMachine(key, true);
-      });
-    }
-
-    // Ensure initial render is populated with progress at 100%
-    renderTimeMachine("fashion", false);
-  }
-
-  
-  // --------------------------------------------------------------------------
-  // 9. INTERACTIVE GROUP CHAT CONTROLLER (#group-chat)
-  // --------------------------------------------------------------------------
-  const groupChatData = [
-    {
-      id: 0,
-      name: "Harriet, Mossline",
-      meta: "Founder, Mossline · with the Aether team",
-      initials: "HM",
-      bg: "#b89b72",
-      messages: [
-        { sender: "client", text: "my dad is now famous for darning lol 😂", time: "10:42 AM" },
-        { sender: "team", text: "Wait what happened?? Did the Sunday repair reel blow up?", time: "10:44 AM" },
-        { sender: "client", text: "It hit 1.4M views on TikTok! He got stopped at the Leeds farmers market this morning. Wholesale orders are up 340% this week. You guys are absolute magicians 🙏✨", time: "10:47 AM" },
-        { sender: "team", text: "Told you! Real craftsmanship beats corporate commercials every time. Prepping Episode 2 with the film crew for Tuesday 🎥🚀", time: "10:49 AM" }
-      ]
-    },
-    {
-      id: 1,
-      name: "Aiko, Quiet Labs",
-      meta: "Head of Growth, Quiet Labs · with the Aether team",
-      initials: "AB",
-      bg: "#8fa3b3",
-      messages: [
-        { sender: "client", text: "kevin has a fan club 😭", time: "02:15 PM" },
-        { sender: "team", text: "Our lead oscilloscope hardware engineer Kevin?? What happened? 😂", time: "02:18 PM" },
-        { sender: "client", text: "Yes! That 12-second debug reel hit 820+ saves on LinkedIn. 4 enterprise VPs booked pilot demos directly from his comments.", time: "02:22 PM" },
-        { sender: "team", text: "B2B doesn't have to be boring. Who said oscilloscopes can't be viral? ⚡", time: "02:25 PM" },
-        { sender: "client", text: "Our ARR target for Q4 was just achieved 3 weeks early. Thank you team!!", time: "02:28 PM" }
-      ]
-    },
-    {
-      id: 2,
-      name: "Leila, Sunday Skin",
-      meta: "Co-Founder, Sunday Skin · with the Aether team",
-      initials: "LH",
-      bg: "#e3a98a",
-      messages: [
-        { sender: "client", text: "sold out AGAIN 🔥", time: "11:05 AM" },
-        { sender: "team", text: "Already?! That was 4,000 units of the peptide serum!", time: "11:08 AM" },
-        { sender: "client", text: "The raw skin texture reel with zero blur filters did 620k impressions in 18 hours. The Shopify store crashed twice today.", time: "11:12 AM" },
-        { sender: "team", text: "Authenticity and clinical proof win over airbrushing every single time 🧪✨", time: "11:15 AM" },
-        { sender: "client", text: "Ordering double the glass bottles tomorrow. You guys completely transformed our brand trajectory.", time: "11:18 AM" }
-      ]
-    }
-  ];
-
-  const groupChatSection = document.getElementById("group-chat");
-  if (groupChatSection) {
-    const chatTabs = groupChatSection.querySelectorAll('ul[role="tablist"] button');
-    const chatAvatar = document.getElementById("chat-avatar");
-    const chatClientName = document.getElementById("chat-client-name");
-    const chatClientMeta = document.getElementById("chat-client-meta");
-    const chatMsgContainer = document.getElementById("group-chat-messages");
-
-    function renderChatThread(chatIndex, animate = true) {
-      const data = groupChatData[chatIndex];
-      if (!data) return;
-
-      if (chatAvatar) {
-        chatAvatar.textContent = data.initials;
-        chatAvatar.style.backgroundColor = data.bg;
-      }
-      if (chatClientName) chatClientName.textContent = data.name;
-      if (chatClientMeta) chatClientMeta.textContent = data.meta;
-
-      if (chatMsgContainer) {
-        chatMsgContainer.innerHTML = data.messages.map((m) => {
-          if (m.sender === "client") {
-            return `
-              <div class="flex items-end gap-2.5 max-w-[85%]">
-                <span class="flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold font-heading text-ink" style="background-color:${data.bg}">${data.initials}</span>
-                <div class="rounded-2xl rounded-bl-sm bg-paper p-3.5 shadow-sm border border-ink/5 text-[14.5px] leading-relaxed text-ink">
-                  <p>${m.text}</p>
-                  <span class="mt-1 block text-right font-mono text-[9px] text-stone">${m.time}</span>
-                </div>
-              </div>
-            `;
-          } else {
-            return `
-              <div class="flex flex-col items-end max-w-[85%] self-end">
-                <div class="rounded-2xl rounded-br-sm bg-ink p-3.5 text-[14.5px] leading-relaxed text-cream">
-                  <p>${m.text}</p>
-                  <span class="mt-1 flex items-center justify-end gap-1 font-mono text-[9px] text-cream/60">
-                    ${m.time} · <svg class="size-3 text-volt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  </span>
-                </div>
-              </div>
-            `;
-          }
-        }).join("");
-
-        if (animate && typeof gsap !== "undefined") {
-          gsap.fromTo(chatMsgContainer.children,
-            { opacity: 0, y: 12 },
-            { opacity: 1, y: 0, stagger: 0.08, duration: 0.35, ease: "power2.out" }
-          );
-        }
-      }
-    }
-
-    chatTabs.forEach((tab, idx) => {
-      tab.addEventListener("click", () => {
-        chatTabs.forEach((t) => {
-          t.setAttribute("aria-selected", "false");
-          t.classList.remove("bg-sand");
-          t.classList.add("hover:bg-sand/60");
-        });
-
-        tab.setAttribute("aria-selected", "true");
-        tab.classList.add("bg-sand");
-        tab.classList.remove("hover:bg-sand/60");
-
-        // Remove unread indicator
-        const unreadDot = tab.querySelector(".bg-ember.rounded-full");
-        if (unreadDot) unreadDot.remove();
-
-        renderChatThread(idx, true);
-      });
-    });
-  }
-
-  // --------------------------------------------------------------------------
-  // 10. CASE NOTES SLIDER CONTROLLER (#case-studies)
-  // --------------------------------------------------------------------------
-  const caseStudiesSection = document.getElementById("case-studies");
-  if (caseStudiesSection) {
-    const caseTrack = document.getElementById("case-studies-track");
-    const prevBtn = document.getElementById("case-prev-btn") || caseStudiesSection.querySelector('button[aria-label*="Previous"]');
-    const nextBtn = document.getElementById("case-next-btn") || caseStudiesSection.querySelector('button[aria-label*="Next"]');
-
-    if (caseTrack) {
-      function getScrollStep() {
-        const firstCard = caseTrack.querySelector('a, article, div');
-        return firstCard ? firstCard.offsetWidth + 24 : 450;
-      }
-
-      if (prevBtn) {
-        prevBtn.addEventListener("click", () => {
-          caseTrack.scrollBy({ left: -getScrollStep(), behavior: "smooth" });
-        });
-      }
-
-      if (nextBtn) {
-        nextBtn.addEventListener("click", () => {
-          caseTrack.scrollBy({ left: getScrollStep(), behavior: "smooth" });
-        });
-      }
-
-      // Mouse drag-to-scroll implementation
-      let isDown = false;
-      let startX;
-      let scrollLeft;
-
-      caseTrack.addEventListener("mousedown", (e) => {
-        isDown = true;
-        caseTrack.style.cursor = "grabbing";
-        caseTrack.setAttribute("data-dragging", "true");
-        startX = e.pageX - caseTrack.offsetLeft;
-        scrollLeft = caseTrack.scrollLeft;
-      });
-
-      caseTrack.addEventListener("mouseleave", () => {
-        isDown = false;
-        caseTrack.style.cursor = "grab";
-        caseTrack.removeAttribute("data-dragging");
-      });
-
-      caseTrack.addEventListener("mouseup", () => {
-        isDown = false;
-        caseTrack.style.cursor = "grab";
-        caseTrack.removeAttribute("data-dragging");
-      });
-
-      caseTrack.addEventListener("mousemove", (e) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const x = e.pageX - caseTrack.offsetLeft;
-        const walk = (x - startX) * 1.6;
-        caseTrack.scrollLeft = scrollLeft - walk;
-      });
-    }
-  }
-
-  // --------------------------------------------------------------------------
-  // 11. THE EDITORIAL SCROLL-TRIGGERED WORD DARKENING (#manifesto)
-  // --------------------------------------------------------------------------
-  const editorialSection = document.getElementById("manifesto");
-  if (editorialSection && typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
-    const words = editorialSection.querySelectorAll(".wall-word");
+  const manifestoSection = document.getElementById("manifesto");
+  if (manifestoSection && typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
+    const words = manifestoSection.querySelectorAll(".wall-word");
     if (words.length > 0) {
       ScrollTrigger.create({
-        trigger: editorialSection,
+        trigger: manifestoSection,
         start: "top 75%",
         end: "bottom 35%",
         scrub: 0.5,
         onUpdate: (self) => {
           const progress = self.progress;
-          const totalWords = words.length;
-          const activeIndex = Math.floor(progress * totalWords * 1.08);
+          const activeIndex = Math.floor(progress * words.length * 1.05);
 
-          words.forEach((word, index) => {
+          words.forEach((w, index) => {
             if (index <= activeIndex) {
-              word.setAttribute("data-lit", "true");
-              word.style.color = "var(--ink)";
+              w.setAttribute("data-lit", "true");
+              w.style.color = "var(--ink)";
             } else {
-              word.setAttribute("data-lit", "false");
-              word.style.color = "rgba(18, 19, 22, 0.18)";
+              w.setAttribute("data-lit", "false");
+              w.style.color = "rgba(10, 13, 20, 0.18)";
             }
           });
 
-          // Animate marker highlights when words inside them are lit
-          editorialSection.querySelectorAll(".marker").forEach((marker) => {
+          // Markers highlight
+          manifestoSection.querySelectorAll(".marker-highlight").forEach((marker) => {
             const hasLit = marker.querySelector('[data-lit="true"]');
             if (hasLit) {
               marker.setAttribute("data-on", "true");
@@ -900,5 +92,455 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  console.log("Aether Atelier Controller Initialized Successfully.");
+  // --------------------------------------------------------------------------
+  // 3. INTERACTIVE CONTENT LAB & ROI SIMULATOR
+  // --------------------------------------------------------------------------
+  const labData = {
+    tiktok: {
+      fashion: {
+        badge: "TikTok · Luxury Fashion Specification",
+        title: "The Atelier Unboxing & Restoration Protocol",
+        desc: "Focusing on raw craftsmanship textures, ASMR sound layering, and studio restoration clips that outpace traditional branded polish.",
+        views: "1.8M - 2.5M",
+        cadence: "5x / Week",
+        engagement: "9.4%",
+        tag: "Hook 01 · 84% retention",
+        text: '"Most people throw this away. Here is why we keep it."',
+        img: "images/hero/bag.jpg"
+      },
+      tech: {
+        badge: "TikTok · Deep Tech & Hardware Specification",
+        title: "The Bench Test & Oscilloscope Protocol",
+        desc: "Raw 12-second engineering teardowns and micro-precision tests that make complex hardware immediately viral to both hobbyists and C-suite buyers.",
+        views: "850k - 1.4M",
+        cadence: "4x / Week",
+        engagement: "11.2%",
+        tag: "Hook 02 · 91% retention",
+        text: '"What happens when you run 40,000 RPM through a 2mm spindle?"',
+        img: "images/hero/speaker.jpg"
+      },
+      beauty: {
+        badge: "TikTok · Skincare & Clinical Formulation",
+        title: "The Macro Dropper & pH Test Protocol",
+        desc: "Hyper-macro 4K viscosity shots paired with transparent scientific proof and ingredient teardowns that trigger instant add-to-cart conversions.",
+        views: "2.2M - 3.8M",
+        cadence: "6x / Week",
+        engagement: "12.8%",
+        tag: "Hook 03 · 88% retention",
+        text: '"Your serum should never turn this color after 30 days."',
+        img: "images/hero/beauty.jpg"
+      }
+    },
+    instagram: {
+      fashion: {
+        badge: "Instagram Reels · High-Fashion Editorial",
+        title: "The Runway Behind-the-Scenes & Silhouette Study",
+        desc: "Cinematic color-graded 9:16 reels focusing on garment movement, textile drape, and founder styling breakdowns.",
+        views: "900k - 1.6M",
+        cadence: "4x / Week",
+        engagement: "7.8%",
+        tag: "Reel Format · 78% saves",
+        text: '"3 ways to style tailored wool without looking corporate."',
+        img: "images/hero/rooftop.jpg"
+      },
+      tech: {
+        badge: "Instagram Reels · Industrial Design",
+        title: "Tactile Product Reveal & CNC Machining",
+        desc: "Hypnotic machining timelapses, anodized aluminum reflections, and clean acoustic switches.",
+        views: "650k - 1.1M",
+        cadence: "3x / Week",
+        engagement: "8.9%",
+        tag: "Reel Format · 82% saves",
+        text: '"Zero visible screws. How we engineered the unibody chassis."',
+        img: "images/hero/concert.jpg"
+      },
+      beauty: {
+        badge: "Instagram Reels · Clean Beauty Aesthetic",
+        title: "Golden Hour Glow & Morning Ritual Routine",
+        desc: "Natural sunlight skin textures, authentic bathroom shelfies, and zero airbrushing to build deep consumer trust.",
+        views: "1.4M - 2.1M",
+        cadence: "5x / Week",
+        engagement: "10.4%",
+        tag: "Reel Format · 85% saves",
+        text: '"Skin texture is normal. Heavy silicones are not."',
+        img: "images/hero/latte.jpg"
+      }
+    },
+    youtube: {
+      fashion: {
+        badge: "YouTube Shorts · Heritage Craftsmanship",
+        title: "The 60-Second Master Tailor Teardown",
+        desc: "Fast-paced documentary shorts breaking down counterfeit stitching vs hand-sewn bespoke tailoring.",
+        views: "1.2M - 2.8M",
+        cadence: "4x / Week",
+        engagement: "6.9%",
+        tag: "Shorts · 92% viewed",
+        text: '"How to spot cheap cashmere in under 5 seconds."',
+        img: "images/hero/canal.jpg"
+      },
+      tech: {
+        badge: "YouTube Shorts · Engineering Teardown",
+        title: "The Impossible Patent Explained",
+        desc: "Explaining physics-defying hardware mechanisms with 3D overlays and high-speed camera capture.",
+        views: "1.5M - 3.2M",
+        cadence: "3x / Week",
+        engagement: "9.8%",
+        tag: "Shorts · 95% viewed",
+        text: '"Why Apple engineers could not solve this hinge problem."',
+        img: "images/hero/speaker.jpg"
+      },
+      beauty: {
+        badge: "YouTube Shorts · Cosmetic Chemistry",
+        title: "The $120 Cream vs $14 Pure Glycerin Test",
+        desc: "No-nonsense laboratory comparisons that capture search intent and algorithmic recommendation loops.",
+        views: "2.5M - 4.2M",
+        cadence: "4x / Week",
+        engagement: "8.4%",
+        tag: "Shorts · 89% viewed",
+        text: '"Why cosmetic brands charge $90 for 1% active niacinamide."',
+        img: "images/hero/beauty.jpg"
+      }
+    },
+    linkedin: {
+      fashion: {
+        badge: "LinkedIn Video · Supply Chain & Luxury Economics",
+        title: "The Direct-to-Consumer Margin Breakdown",
+        desc: "Founder video essays dissecting the hidden economics of European luxury houses vs independent agile studios.",
+        views: "120k - 350k",
+        cadence: "2x / Week",
+        engagement: "14.2%",
+        tag: "B2B Reach · 640+ C-suite saves",
+        text: '"Why wholesale retail is quietly dying for emerging fashion brands."',
+        img: "images/hero/podcast.jpg"
+      },
+      tech: {
+        badge: "LinkedIn Video · Hardware Architecture",
+        title: "Building Deep Tech in Public",
+        desc: "Honest founder updates on sensor calibration, supply chain bottlenecks, and seed-to-Series A milestones.",
+        views: "180k - 480k",
+        cadence: "2x / Week",
+        engagement: "16.8%",
+        tag: "B2B Reach · 820+ C-suite saves",
+        text: '"We spent 9 months failing this drop test. Here is the exact fix."',
+        img: "images/hero/podcast.jpg"
+      },
+      beauty: {
+        badge: "LinkedIn Video · Brand Scaling & Retail Ops",
+        title: "From Kitchen Formulation to 400 Sephora Doors",
+        desc: "Strategic retail expansion insights and consumer loyalty economics for venture investors and CPG operators.",
+        views: "150k - 400k",
+        cadence: "2x / Week",
+        engagement: "13.5%",
+        tag: "B2B Reach · 510+ C-suite saves",
+        text: '"The customer acquisition unit economics that made us profitable in year 1."',
+        img: "images/hero/podcast.jpg"
+      }
+    }
+  };
+
+  let currentPlatform = "tiktok";
+  let currentVertical = "fashion";
+
+  function updateLabUI() {
+    const data = labData[currentPlatform][currentVertical];
+    if (!data) return;
+
+    const badgeEl = document.getElementById("lab-badge");
+    const titleEl = document.getElementById("lab-title");
+    const descEl = document.getElementById("lab-desc");
+    const viewsEl = document.getElementById("lab-views");
+    const cadenceEl = document.getElementById("lab-cadence");
+    const engagementEl = document.getElementById("lab-engagement");
+    const cardTagEl = document.getElementById("lab-card-tag");
+    const cardTextEl = document.getElementById("lab-card-text");
+    const previewImgEl = document.getElementById("lab-preview-img");
+
+    if (badgeEl) badgeEl.textContent = data.badge;
+    if (titleEl) titleEl.textContent = data.title;
+    if (descEl) descEl.textContent = data.desc;
+    if (viewsEl) viewsEl.textContent = data.views;
+    if (cadenceEl) cadenceEl.textContent = data.cadence;
+    if (engagementEl) engagementEl.textContent = data.engagement;
+    if (cardTagEl) cardTagEl.textContent = data.tag;
+    if (cardTextEl) cardTextEl.textContent = data.text;
+    if (previewImgEl) previewImgEl.src = data.img;
+
+    // Button states
+    document.querySelectorAll(".lab-platform-btn").forEach((btn) => {
+      const p = btn.getAttribute("data-platform");
+      if (p === currentPlatform) {
+        btn.classList.add("bg-ink", "text-white");
+        btn.classList.remove("bg-sand", "text-ink");
+      } else {
+        btn.classList.remove("bg-ink", "text-white");
+        btn.classList.add("bg-sand", "text-ink");
+      }
+    });
+
+    document.querySelectorAll(".lab-vertical-btn").forEach((btn) => {
+      const v = btn.getAttribute("data-vertical");
+      if (v === currentVertical) {
+        btn.classList.add("bg-ink", "text-white");
+        btn.classList.remove("bg-sand", "text-ink");
+      } else {
+        btn.classList.remove("bg-ink", "text-white");
+        btn.classList.add("bg-sand", "text-ink");
+      }
+    });
+  }
+
+  document.querySelectorAll(".lab-platform-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      currentPlatform = btn.getAttribute("data-platform");
+      updateLabUI();
+    });
+  });
+
+  document.querySelectorAll(".lab-vertical-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      currentVertical = btn.getAttribute("data-vertical");
+      updateLabUI();
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // 4. UNEDITED GROUP CHAT TAB CONTROLLER
+  // --------------------------------------------------------------------------
+  const chatThreads = {
+    harriet: {
+      avatarBg: "#1E3A8A",
+      initials: "HM",
+      name: "Harriet, Mossline Atelier",
+      role: "Founder & Creative Director · with Aether Team",
+      messages: [
+        { sender: "client", text: "my dad is now famous for darning lol 😂 He got stopped at the Leeds farmers market this morning!!", time: "10:42 AM" },
+        { sender: "aether", text: "Wait what happened?? Did the Sunday repair reel blow up?", time: "10:44 AM · Delivered" },
+        { sender: "client", text: "It hit 1.4M views on TikTok and 680k on Reels! Wholesale inquiries jumped +340% in 5 days. You guys are literal magicians. 🪄✨", time: "10:47 AM" }
+      ]
+    },
+    aiko: {
+      avatarBg: "#0F766E",
+      initials: "QL",
+      name: "Aiko, Quiet Labs",
+      role: "VP of Engineering · with Aether Team",
+      messages: [
+        { sender: "client", text: "Kevin now has an executive fan club on LinkedIn 😂 That 12s oscilloscope debug clip just crossed 800 saves.", time: "02:15 PM" },
+        { sender: "aether", text: "Incredible! Has it translated to inbound demos yet?", time: "02:18 PM · Delivered" },
+        { sender: "client", text: "We literally booked 4 enterprise VP demos this morning alone. Siemens and ABB engineers are commenting on the thread. Total gamechanger.", time: "02:24 PM" }
+      ]
+    },
+    leila: {
+      avatarBg: "#C2410C",
+      initials: "SS",
+      name: "Leila, Sunday Skin",
+      role: "Co-Founder & CEO · with Aether Team",
+      messages: [
+        { sender: "client", text: "Shopify just crashed AGAIN. 4,000 serum units gone in under 72 hours! 🚨😭", time: "06:30 PM" },
+        { sender: "aether", text: "The raw macro texture unboxing video hit the algorithm! Checking analytics now.", time: "06:32 PM · Delivered" },
+        { sender: "client", text: "We are rushing factory production tomorrow at 7am. We need 10 more formats for the summer launch, don't let our pod sleep!", time: "06:36 PM" }
+      ]
+    }
+  };
+
+  const chatTabs = document.querySelectorAll(".chat-tab-btn");
+  const activeAvatar = document.getElementById("active-chat-avatar");
+  const activeName = document.getElementById("active-chat-name");
+  const activeRole = document.getElementById("active-chat-role");
+  const messagesContainer = document.getElementById("chat-messages-container");
+
+  chatTabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const chatId = tab.getAttribute("data-chat-id");
+      const thread = chatThreads[chatId];
+      if (!thread) return;
+
+      // Update active tab styles
+      chatTabs.forEach((t) => {
+        t.setAttribute("aria-selected", "false");
+        t.classList.remove("bg-paper", "shadow-sm", "border", "border-ink/5");
+        t.classList.add("hover:bg-sand/60");
+      });
+      tab.setAttribute("aria-selected", "true");
+      tab.classList.add("bg-paper", "shadow-sm", "border", "border-ink/5");
+      tab.classList.remove("hover:bg-sand/60");
+
+      // Update header
+      if (activeAvatar) {
+        activeAvatar.style.backgroundColor = thread.avatarBg;
+        activeAvatar.textContent = thread.initials;
+      }
+      if (activeName) activeName.textContent = thread.name;
+      if (activeRole) activeRole.textContent = thread.role;
+
+      // Render messages with GSAP stagger animation
+      if (messagesContainer) {
+        messagesContainer.innerHTML = "";
+        thread.messages.forEach((msg) => {
+          if (msg.sender === "client") {
+            const bubble = document.createElement("div");
+            bubble.className = "flex items-end gap-3 max-w-[85%] opacity-0 translate-y-2 transition-all duration-300";
+            bubble.innerHTML = `
+              <div class="flex size-8 shrink-0 items-center justify-center rounded-full font-heading font-bold text-white text-xs" style="background-color: ${thread.avatarBg}">${thread.initials}</div>
+              <div class="rounded-2xl rounded-bl-sm border border-ink/10 bg-paper p-4 shadow-sm text-sm text-ink leading-relaxed">
+                ${msg.text}
+                <span class="mt-1 block text-right font-mono text-[9px] text-stone">${msg.time}</span>
+              </div>
+            `;
+            messagesContainer.appendChild(bubble);
+          } else {
+            const bubble = document.createElement("div");
+            bubble.className = "flex flex-col items-end max-w-[85%] self-end opacity-0 translate-y-2 transition-all duration-300";
+            bubble.innerHTML = `
+              <div class="rounded-2xl rounded-br-sm bg-ink p-4 text-sm text-white leading-relaxed">
+                ${msg.text}
+                <span class="mt-1 block text-right font-mono text-[9px] text-white/50">${msg.time}</span>
+              </div>
+            `;
+            messagesContainer.appendChild(bubble);
+          }
+        });
+
+        // Stagger entrance
+        const bubbles = messagesContainer.children;
+        Array.from(bubbles).forEach((b, i) => {
+          setTimeout(() => {
+            b.classList.remove("opacity-0", "translate-y-2");
+          }, i * 100);
+        });
+      }
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // 5. PRICING MONTHLY / QUARTERLY TOGGLE
+  // --------------------------------------------------------------------------
+  const monthlyBtn = document.getElementById("billing-monthly-btn");
+  const quarterlyBtn = document.getElementById("billing-quarterly-btn");
+  const pricePilot = document.getElementById("price-pilot");
+  const priceVelocity = document.getElementById("price-velocity");
+  const priceEnterprise = document.getElementById("price-enterprise");
+
+  if (monthlyBtn && quarterlyBtn) {
+    monthlyBtn.addEventListener("click", () => {
+      monthlyBtn.classList.add("bg-ink", "text-white");
+      monthlyBtn.classList.remove("text-stone");
+      quarterlyBtn.classList.remove("bg-ink", "text-white");
+      quarterlyBtn.classList.add("text-stone");
+
+      if (pricePilot) pricePilot.textContent = "$4,800";
+      if (priceVelocity) priceVelocity.textContent = "$8,500";
+      if (priceEnterprise) priceEnterprise.textContent = "$14,000";
+    });
+
+    quarterlyBtn.addEventListener("click", () => {
+      quarterlyBtn.classList.add("bg-ink", "text-white");
+      quarterlyBtn.classList.remove("text-stone");
+      monthlyBtn.classList.remove("bg-ink", "text-white");
+      monthlyBtn.classList.add("text-stone");
+
+      if (pricePilot) pricePilot.textContent = "$4,080";
+      if (priceVelocity) priceVelocity.textContent = "$7,225";
+      if (priceEnterprise) priceEnterprise.textContent = "$11,900";
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // 6. ACCORDION FAQ
+  // --------------------------------------------------------------------------
+  document.querySelectorAll(".faq-toggle").forEach((toggle) => {
+    toggle.addEventListener("click", () => {
+      const isExpanded = toggle.getAttribute("aria-expanded") === "true";
+      const answer = toggle.nextElementSibling;
+      const chevron = toggle.querySelector(".faq-chevron");
+
+      // Close other FAQs
+      document.querySelectorAll(".faq-toggle").forEach((otherToggle) => {
+        if (otherToggle !== toggle) {
+          otherToggle.setAttribute("aria-expanded", "false");
+          const otherAnswer = otherToggle.nextElementSibling;
+          const otherChevron = otherToggle.querySelector(".faq-chevron");
+          if (otherAnswer) otherAnswer.classList.remove("open");
+          if (otherChevron) otherChevron.classList.remove("open");
+        }
+      });
+
+      // Toggle current
+      toggle.setAttribute("aria-expanded", String(!isExpanded));
+      if (answer) answer.classList.toggle("open");
+      if (chevron) chevron.classList.toggle("open");
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // 7. PROJECT INTAKE FORM & GOAL SELECTOR
+  // --------------------------------------------------------------------------
+  const goalPills = document.querySelectorAll(".goal-pill");
+  goalPills.forEach((pill) => {
+    pill.addEventListener("click", () => {
+      goalPills.forEach((p) => {
+        p.classList.remove("border-ember", "bg-ember/5", "text-ember");
+        const dot = p.querySelector(".rounded-full");
+        if (dot) dot.classList.replace("bg-ember", "bg-transparent");
+      });
+
+      pill.classList.add("border-ember", "bg-ember/5", "text-ember");
+      const dot = pill.querySelector(".rounded-full");
+      if (dot) dot.classList.replace("bg-transparent", "bg-ember");
+    });
+  });
+
+  const intakeForm = document.getElementById("project-intake-form");
+  const intakeStatus = document.getElementById("intake-status-msg");
+  if (intakeForm) {
+    intakeForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById("intake-submit-btn");
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = "<span>Transmitting Brief...</span>";
+      }
+
+      setTimeout(() => {
+        intakeForm.reset();
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = "<span>Request Strategy Forecast</span>";
+        }
+        if (intakeStatus) {
+          intakeStatus.textContent = "✓ Strategy Brief Received. Our partners will review your channels and reply within 24 hours.";
+          intakeStatus.classList.remove("hidden");
+        }
+      }, 1200);
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // 8. LIVE STUDIO TIME CLOCKS (LONDON & NYC)
+  // --------------------------------------------------------------------------
+  function updateClocks() {
+    const londonClock = document.getElementById("london-clock");
+    const nycClock = document.getElementById("nyc-clock");
+    const now = new Date();
+
+    if (londonClock) {
+      londonClock.textContent = now.toLocaleTimeString("en-GB", { timeZone: "Europe/London", hour12: false }) + " GMT";
+    }
+    if (nycClock) {
+      nycClock.textContent = now.toLocaleTimeString("en-US", { timeZone: "America/New_York", hour12: true }) + " EST";
+    }
+  }
+  updateClocks();
+  setInterval(updateClocks, 1000);
+
+  // --------------------------------------------------------------------------
+  // 9. BACK TO TOP BUTTON
+  // --------------------------------------------------------------------------
+  const backToTopBtn = document.getElementById("back-to-top-btn");
+  if (backToTopBtn) {
+    backToTopBtn.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  console.log("Aether Atelier Studio Runtime Initialized Successfully.");
 });
