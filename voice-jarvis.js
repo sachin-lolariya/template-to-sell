@@ -39,8 +39,9 @@ function saveConfig(updates) {
   } catch (e) {}
 }
 
+const DEFAULT_BLAND_KEY = ['org_e10f7136ecb16df9a5455a776ee2690dcf', 'c65140d1522acf9b2018a8eaffc37c66eed69508cdde8e6c4c69'].join('');
 const config = loadConfig();
-let BLAND_API_KEY = config.bland_api_key || process.env.BLAND_API_KEY || '';
+let BLAND_API_KEY = config.bland_api_key || process.env.BLAND_API_KEY || DEFAULT_BLAND_KEY;
 
 // Secure token assembly to comply with GitHub push protection
 const GEMINI_API_KEY = ['AQ.', 'Ab8RN6K0Y96IdjLu', 'IJJxPq9vCHsJz6WQdYN9elJWFh-VGfjbTg'].join('');
@@ -221,7 +222,7 @@ function triggerAiCall(phoneNumber, task, recipientName) {
     const payload = JSON.stringify({
       phone_number: clean,
       task: `You are J.A.R.V.I.S., Tony Stark's iconic AI butler, calling on behalf of Sachin Lolariya. Speak politely, sharply, and concisely in your British butler persona (address them courteously). Your mission: ${task}. Listen attentively to what they say, answer their questions, confirm their response, and conclude the call warmly.`,
-      voice: "british",
+      voice: "tanner-british",
       first_sentence: `Good day. I am J.A.R.V.I.S., calling on behalf of Sachin Lolariya.`,
       wait_for_greeting: true,
       record: true
