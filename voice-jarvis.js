@@ -203,7 +203,12 @@ function isYouTube(lower) {
 }
 
 function isWhatsApp(lower) {
-  return lower.includes('whatsapp');
+  return lower.includes('whatsapp') ||
+         lower.startsWith('message to ') ||
+         lower.startsWith('send message to ') ||
+         lower.startsWith('send a message to ') ||
+         (lower.startsWith('tell ') && !lower.startsWith('tell me')) ||
+         (lower.startsWith('ask ') && !lower.startsWith('ask me'));
 }
 
 function isSettings(lower) {
@@ -219,6 +224,7 @@ function isRapido(lower) {
          lower.includes('rapdio') ||
          lower.includes('rapedo') ||
          lower.includes('rapid') ||
+         (lower.includes('radio') && (lower.includes('ride') || lower.includes('bike') || lower.includes('cab') || lower.includes('book') || lower.includes('rap') || lower.includes('open radio') || lower.includes('app'))) ||
          lower.includes('book a ride') ||
          lower.includes('book ride') ||
          lower.includes('book a bike') ||
@@ -393,11 +399,46 @@ async function handleVoiceNote(cmd, lower) {
       }
 
       console.log(`\x1b[32m[✔] Audio generated successfully: "${voiceText}"\x1b[0m`);
+
+      // 1. Resolve contact phone number automatically
+      let cleanPhone = null;
+      const digitMatch = target.match(/\+?\d[\d -]{6,}\d/);
+      if (digitMatch) {
+        cleanPhone = cleanWhatsAppNumber(digitMatch[0]);
+      } else {
+        const found = findContact(target, contacts);
+        if (found && found.number) {
+          cleanPhone = cleanWhatsAppNumber(found.number);
+          console.log(`\x1b[32m[✔] Auto-resolved Contact: "${found.name}" -> +${cleanPhone}\x1b[0m`);
+        }
+      }
+
+      // 2. Try zero-touch direct JID dispatch via Android MediaStore ContentProvider
+      if (cleanPhone) {
+        try {
+          await runTermux(`termux-media-scan -v "${sharePath}"`);
+          const qRes = await runTermux('content query --uri content://media/external/audio/media --where "_display_name=\'jarvis_voice_note.mp3\'" --projection _id');
+          let mediaId = null;
+          if (qRes.ok && qRes.output) {
+            const m = qRes.output.match(/_id=(\d+)/);
+            if (m) mediaId = m[1];
+          }
+
+          if (mediaId) {
+            const contentUri = `content://media/external/audio/media/${mediaId}`;
+            console.log(`\x1b[32m[✔] Direct Chat Target: +${cleanPhone} (Media ID: ${mediaId})\x1b[0m`);
+            await speak(`Voice note synthesized. Opening chat with ${target} now, Sir.`);
+            const directRes = await runTermux(`am start -a android.intent.action.SEND -t audio/mpeg --eu android.intent.extra.STREAM "${contentUri}" -e "jid" "${cleanPhone}@s.whatsapp.net" -p com.whatsapp`);
+            if (directRes.ok && (!directRes.output || !directRes.output.includes('Error'))) {
+              return;
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 3. Fallback: Dispatch via termux-open with contact highlighted at top
       console.log(`\x1b[36m[*] Opening WhatsApp: Tap ${target} at the top of Frequently Contacted to send!\x1b[0m`);
-      
       await speak(`Voice note generated. Tap ${target} on WhatsApp to dispatch it, Sir.`);
-      
-      // Dispatch via termux-open which sets proper Java ClipData permissions
       await runTermux(`termux-open --send --content-type audio/mpeg "${sharePath}"`);
       return;
     } else {
@@ -409,12 +450,58 @@ async function handleVoiceNote(cmd, lower) {
   await speak("Please specify the recipient and message, Sir. For example: Voice note to Gopi: What is your favourite thing?");
 }
 
-// 100% Free WhatsApp Direct Text Messenger (Opens directly in recipient's chat with 0 contact picking!)
+// 100% Free WhatsApp Direct Text Messenger (Opens directly into recipient's chat with 0 contact picking!)
 async function handleWhatsAppMessage(cmd, lower) {
-  const match = cmd.match(/^(?:please\s+)?(?:send\s+)?whatsapp\s+(?:to\s+)?(.+?)(?:\s*(?:saying|that|:|message)\s*|\s+)(.+)$/i);
-  if (match) {
-    const target = match[1].trim();
-    const message = match[2].trim();
+  let contacts = [];
+  try {
+    const cRes = await runTermux('termux-contact-list');
+    if (cRes.ok && cRes.output) {
+      contacts = JSON.parse(cRes.output);
+    }
+  } catch (e) {}
+
+  let target = null;
+  let message = null;
+
+  let clean = cmd.replace(/^(?:please\s+)?/i, '').trim();
+
+  // Pattern 1: "whatsapp [to] [target] [saying/that/:/message] [msg]"
+  const waMatch = clean.match(/^(?:send\s+)?(?:whatsapp\s+(?:message\s+)?|message\s+)(?:to\s+)?(.+?)(?:\s*(?:saying|that|:|message)\s*|\s+)(.+)$/i);
+  if (waMatch) {
+    target = waMatch[1].trim();
+    message = waMatch[2].trim();
+  }
+
+  // Pattern 2: "tell/ask [target] [message]"
+  if (!target) {
+    const tellMatch = clean.match(/^(?:tell|ask)\s+(?!me\b)(.+?)\s+(?:to\s+|that\s+|saying\s+|:\s*)(.+)$/i);
+    if (tellMatch) {
+      target = tellMatch[1].trim();
+      message = tellMatch[2].trim();
+    }
+  }
+
+  // Pattern 3: Colon format: "Gopi: [message]"
+  if (!target && clean.includes(':')) {
+    const parts = clean.split(':');
+    const possibleName = parts[0].trim();
+    const possibleMsg = parts.slice(1).join(':').trim();
+    if (findContact(possibleName, contacts)) {
+      target = possibleName;
+      message = possibleMsg;
+    }
+  }
+
+  // Pattern 4: Fallback standard regex
+  if (!target) {
+    const fallbackMatch = clean.match(/^(?:whatsapp|chat)\s+(?:to\s+)?(.+?)(?:\s+(.+))?$/i);
+    if (fallbackMatch) {
+      target = fallbackMatch[1].trim();
+      message = fallbackMatch[2] ? fallbackMatch[2].trim() : 'Hello!';
+    }
+  }
+
+  if (target && message) {
     console.log(`\x1b[32m-> WhatsApp direct message requested for "${target}": "${message}"\x1b[0m`);
 
     let phone = null;
@@ -422,13 +509,10 @@ async function handleWhatsAppMessage(cmd, lower) {
     if (digitMatch) {
       phone = digitMatch[0].replace(/[^0-9]/g, '');
     } else {
-      const cRes = await runTermux('termux-contact-list');
-      if (cRes.ok && cRes.output) {
-        try {
-          const contacts = JSON.parse(cRes.output);
-          const found = findContact(target, contacts);
-          if (found && found.number) phone = found.number.replace(/[^0-9]/g, '');
-        } catch (e) {}
+      const found = findContact(target, contacts);
+      if (found && found.number) {
+        phone = found.number.replace(/[^0-9]/g, '');
+        console.log(`\x1b[32m[✔] Auto-resolved Contact: "${found.name}" -> ${phone}\x1b[0m`);
       }
     }
 
@@ -490,82 +574,43 @@ async function handleSms(cmd, lower) {
   await runTermux('am start -a android.intent.action.MAIN -c android.intent.category.APP_MESSAGING');
 }
 
-// Multi-Candidate Native Rapido Launcher (Tests all packages & activities without opening Chrome or Play Store)
+// Native Rapido Launcher (Tests native scheme, launcher activity, and splash activity without browser)
 async function handleRapido() {
   console.log('\x1b[32m-> Launching Rapido Native Mobile App...\x1b[0m');
   await speak("Opening Rapido to book your ride right away, Sir.");
 
-  const candidatePackages = [
-    'com.rapido.passenger',
-    'com.rapido',
-    'com.rapido.rider',
-    'bike.rapido',
-    'com.roppen.rapido'
-  ];
-
-  // Try to find any installed package matching rapido via user 0
+  // Check for any installed Rapido package dynamically
+  let discoveredPkg = null;
   try {
-    const pm = await runTermux('pm list packages --user 0 2>/dev/null | grep -Ei "rapido|roppen"');
-    if (pm.ok && pm.output) {
-      const lines = pm.output.split('\n');
-      for (const line of lines) {
-        const clean = line.replace(/^package:/, '').trim();
-        if (clean && !candidatePackages.includes(clean)) {
-          candidatePackages.unshift(clean);
-        }
-      }
+    const pmRes = await runTermux('pm list packages -3 2>/dev/null | grep -i "rapido" | head -n 1');
+    if (pmRes.ok && pmRes.output) {
+      discoveredPkg = pmRes.output.replace(/^package:/, '').trim();
+      console.log(`\x1b[32m[✔] Discovered installed package: ${discoveredPkg}\x1b[0m`);
     }
   } catch (e) {}
 
-  console.log(`\x1b[34m[*] Scanning Rapido packages:\x1b[0m`, candidatePackages.join(', '));
+  const targetPkg = discoveredPkg || 'com.rapido.passenger';
 
-  for (const pkg of candidatePackages) {
-    // 1. Try resolve-activity to find exact entry point
-    const resActivity = await runTermux(`cmd package resolve-activity --brief ${pkg} 2>/dev/null | tail -n 1`);
-    if (resActivity.ok && resActivity.output && !resActivity.output.includes('Error') && !resActivity.output.includes('No activities')) {
-      const comp = resActivity.output.trim();
-      console.log(`\x1b[32m[✔] Found entry point: ${comp}\x1b[0m`);
-      const launchRes = await runTermux(`am start -n ${comp}`);
-      if (launchRes.ok && (!launchRes.output || !launchRes.output.includes('Error'))) {
-        return;
-      }
-    }
+  const launchCommands = [
+    // 1. Direct native URI scheme (most reliable across all Android/Vivo versions)
+    'am start -a android.intent.action.VIEW -d "rapido://"',
+    'termux-open "rapido://"',
+    // 2. Main launcher activity via monkey
+    `monkey -p ${targetPkg} -c android.intent.category.LAUNCHER 1`,
+    // 3. Android Intent category launcher
+    `am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p ${targetPkg}`,
+    // 4. Known splash activity classes
+    `am start -n ${targetPkg}/.splash.SplashActivity`,
+    `am start -n ${targetPkg}/com.rapido.passenger.splash.SplashActivity`,
+    `am start -n ${targetPkg}/.activities.SplashScreen`
+  ];
 
-    // 2. Try known main activities
-    const activities = [
-      `${pkg}/.activities.SplashScreen`,
-      `${pkg}/com.rapido.passenger.activities.SplashScreen`,
-      `${pkg}/com.rapido.passenger.ui.main.MainActivity`,
-      `${pkg}/com.rapido.passenger.MainActivity`,
-      `${pkg}/com.rapido.passenger.activities.HomeActivity`
-    ];
+  console.log(`\x1b[34m[*] Executing native launch commands for ${targetPkg}...\x1b[0m`);
+  const fullCmd = launchCommands.join(' || ');
+  const res = await runTermux(fullCmd);
 
-    for (const act of activities) {
-      const actRes = await runTermux(`am start -n ${act}`);
-      if (actRes.ok && (!actRes.output || !actRes.output.includes('Error'))) {
-        console.log(`\x1b[32m[✔] Launched via ${act}\x1b[0m`);
-        return;
-      }
-    }
-
-    // 3. Try native intent scheme
-    const intentRes = await runTermux(`am start -a android.intent.action.VIEW -d "intent://ride#Intent;scheme=rapido;package=${pkg};end;"`);
-    if (intentRes.ok && (!intentRes.output || !intentRes.output.includes('Error'))) {
-      console.log(`\x1b[32m[✔] Launched via intent scheme for ${pkg}\x1b[0m`);
-      return;
-    }
-
-    // 4. Try monkey
-    const monkeyRes = await runTermux(`monkey -p ${pkg} 1`);
-    if (monkeyRes.ok && (!monkeyRes.stderr || !monkeyRes.stderr.includes('No activities'))) {
-      console.log(`\x1b[32m[✔] Launched via monkey for ${pkg}\x1b[0m`);
-      return;
-    }
-  }
-
-  // If all automated attempts are blocked by Vivo security, inform user
-  console.log('\x1b[33m[!] Note: Vivo security may require manually tapping Rapido once from your home screen.\x1b[0m');
-  await speak("I have initiated the launch sequence for Rapido. If Vivo's security prevents it from opening, please tap Rapido from your home screen to grant permission, Sir.");
+  if (res.output) console.log('\x1b[90m[launch out]:', res.output, '\x1b[0m');
+  if (res.stderr) console.log('\x1b[90m[launch err]:', res.stderr, '\x1b[0m');
 }
 
 // Hardware Bridge Diagnostic Check
