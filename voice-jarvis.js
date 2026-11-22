@@ -291,7 +291,13 @@ async function handleCall(cmd, lower) {
     if (callRes.ok) {
       await speak(`Call dispatched successfully, Sir. I am speaking with ${target} now.`);
     } else {
-      await speak(callRes.message || `Unable to place call: ${callRes.error}`);
+      console.log('AI Call Error:', callRes.error);
+      if (callRes.error && callRes.error.toLowerCase().includes('international')) {
+        await speak(`Cloud telephony requires paid international credits for this number, Sir. Placing a free direct call through your mobile SIM card instead.`);
+        await runTermux(`termux-telephony-call ${resolvedNumber} || am start -a android.intent.action.DIAL -d "tel:${resolvedNumber}"`);
+      } else {
+        await speak(callRes.message || `Unable to place call: ${callRes.error}`);
+      }
     }
     return;
   }
@@ -331,6 +337,86 @@ async function handleCall(cmd, lower) {
   // Generic dialer
   await speak("Opening phone dialer, Sir.");
   await runTermux('am start -a android.intent.action.DIAL');
+}
+
+// 100% Free WhatsApp Smart Messenger
+async function handleWhatsAppMessage(cmd, lower) {
+  const match = cmd.match(/^(?:please\s+)?(?:send\s+)?whatsapp\s+(?:to\s+)?(.+?)(?:\s*(?:saying|that|:|message)\s*|\s+)(.+)$/i);
+  if (match) {
+    const target = match[1].trim();
+    const message = match[2].trim();
+    console.log(`\x1b[32m-> WhatsApp message requested for "${target}": "${message}"\x1b[0m`);
+
+    let phone = null;
+    const digitMatch = target.match(/\+?\d[\d -]{6,}\d/);
+    if (digitMatch) {
+      phone = digitMatch[0].replace(/[^0-9]/g, '');
+    } else {
+      const cRes = await runTermux('termux-contact-list');
+      if (cRes.ok && cRes.output) {
+        try {
+          const contacts = JSON.parse(cRes.output);
+          const found = contacts.find(c => c.name && c.name.toLowerCase().includes(target.toLowerCase()));
+          if (found && found.number) phone = found.number.replace(/[^0-9]/g, '');
+        } catch (e) {}
+      }
+    }
+
+    if (phone) {
+      if (phone.length === 10) phone = '91' + phone;
+      const encodedMsg = encodeURIComponent(message);
+      await speak(`Opening WhatsApp for ${target} with your message, Sir.`);
+      await runTermux(`am start -a android.intent.action.VIEW -d "https://api.whatsapp.com/send?phone=${phone}&text=${encodedMsg}"`);
+      return;
+    }
+
+    const encodedMsg = encodeURIComponent(message);
+    await speak(`Opening WhatsApp with your message, Sir.`);
+    await runTermux(`am start -a android.intent.action.VIEW -d "whatsapp://send?text=${encodedMsg}"`);
+    return;
+  }
+
+  await speak("Opening WhatsApp, Sir.");
+  await runTermux('monkey -p com.whatsapp 1');
+}
+
+// 100% Free SIM SMS Messenger
+async function handleSms(cmd, lower) {
+  const match = cmd.match(/^(?:please\s+)?(?:send\s+)?(?:sms|text|message)\s+(?:to\s+)?(.+?)(?:\s*(?:saying|that|:|message)\s*|\s+)(.+)$/i);
+  if (match) {
+    const target = match[1].trim();
+    const message = match[2].trim();
+
+    let phone = null;
+    const digitMatch = target.match(/\+?\d[\d -]{6,}\d/);
+    if (digitMatch) {
+      phone = digitMatch[0].replace(/[^0-9+]/g, '');
+    } else {
+      const cRes = await runTermux('termux-contact-list');
+      if (cRes.ok && cRes.output) {
+        try {
+          const contacts = JSON.parse(cRes.output);
+          const found = contacts.find(c => c.name && c.name.toLowerCase().includes(target.toLowerCase()));
+          if (found && found.number) phone = found.number;
+        } catch (e) {}
+      }
+    }
+
+    if (phone) {
+      console.log(`\x1b[32m-> Dispatching Free SMS via SIM to ${target} (${phone}): "${message}"\x1b[0m`);
+      await speak(`Sending free SMS to ${target} via your SIM card, Sir.`);
+      const res = await runTermux(`termux-sms-send -n "${phone}" "${message.replace(/"/g, '\\"')}"`);
+      if (res.ok) {
+        await speak("Message dispatched successfully, Sir.");
+      } else {
+        await runTermux(`am start -a android.intent.action.SENDTO -d "smsto:${phone}" --es sms_body "${message.replace(/"/g, '\\"')}"`);
+      }
+      return;
+    }
+  }
+
+  await speak("Opening messages, Sir.");
+  await runTermux('am start -a android.intent.action.MAIN -c android.intent.category.APP_MESSAGING');
 }
 
 // Hardware Bridge Diagnostic Check
@@ -470,11 +556,15 @@ async function processOrder(input) {
     return;
   }
 
-  // 8. Open WhatsApp
+  // 8. WhatsApp (Open or Send Message)
   if (isWhatsApp(lower)) {
-    console.log('\x1b[32m-> Launching WhatsApp\x1b[0m');
-    await speak("Opening WhatsApp, Sir.");
-    await runTermux('monkey -p com.whatsapp 1');
+    await handleWhatsAppMessage(cmd, lower);
+    return;
+  }
+
+  // 8b. Free SIM SMS
+  if (lower.startsWith('sms ') || lower.startsWith('send sms') || lower.startsWith('send text') || lower.startsWith('text ') || lower.includes('send a message')) {
+    await handleSms(cmd, lower);
     return;
   }
 
