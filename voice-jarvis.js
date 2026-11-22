@@ -257,6 +257,40 @@ function triggerAiCall(phoneNumber, task, recipientName) {
   });
 }
 
+function waitForPickupAndSpeak(spokenText) {
+  return new Promise((resolve) => {
+    let spoken = false;
+
+    console.log('\n\x1b[1m\x1b[32m===============================================================\x1b[0m');
+    console.log('\x1b[1m\x1b[33m👉 TAP [ENTER] AS SOON AS THEY PICK UP THE CALL! 👈\x1b[0m');
+    console.log('\x1b[36m   JARVIS will immediately speak aloud into the speakerphone.\x1b[0m');
+    console.log('\x1b[90m   (Or JARVIS will automatically speak in 18 seconds if you do nothing)\x1b[0m');
+    console.log('\x1b[1m\x1b[32m===============================================================\x1b[0m\n');
+
+    const autoTimer = setTimeout(async () => {
+      if (!spoken) {
+        spoken = true;
+        console.log('\x1b[33m[*] 18s timer reached: Speaking message now...\x1b[0m');
+        await speak(spokenText);
+        resolve();
+      }
+    }, 18000);
+
+    const onData = async () => {
+      if (!spoken) {
+        spoken = true;
+        clearTimeout(autoTimer);
+        process.stdin.removeListener('data', onData);
+        console.log('\x1b[32m[*] Pick-up confirmed by you! Speaking message now...\x1b[0m');
+        await speak(spokenText);
+        resolve();
+      }
+    };
+
+    process.stdin.once('data', onData);
+  });
+}
+
 async function handleCall(cmd, lower) {
   // Check if this is an Autonomous AI Conversation Call (e.g., "call Rahul and tell him...", "call Mom and ask...")
   const aiMatch = cmd.match(/^(?:please\s+)?(?:call|dial|phone|ai\s+call)\s+(.+?)\s+(?:and\s+tell|and\s+ask|and\s+say|to\s+tell|to\s+ask)\s+(.+)$/i);
@@ -293,12 +327,15 @@ async function handleCall(cmd, lower) {
     } else {
       console.log('AI Call Error:', callRes.error);
       if (callRes.error && callRes.error.toLowerCase().includes('international')) {
-        await speak(`Cloud telephony requires paid international credits, Sir. Engaging Speakerphone Butler mode! Dialing ${target} via your free SIM card now. Please turn on speakerphone so they can hear me speak for you!`);
+        const isQuestion = lower.includes(' ask ') || lower.includes(' question ') || lower.includes(' enquire ');
+        const introVerb = isQuestion ? "ask you" : "inform you";
+        const spokenText = `Hello! This is Sachin's automated assistant speaking. Sachin asked me to ${introVerb}: ${task}. I repeat: ${task}. Thank you!`;
+
+        await speak(`Cloud telecom requires paid international credits, Sir. Engaging Speakerphone Butler mode! Dialing ${target} via your free SIM card now. Please turn on speakerphone, and tap ENTER as soon as they answer!`);
         await runTermux(`termux-telephony-call ${resolvedNumber} || am start -a android.intent.action.DIAL -d "tel:${resolvedNumber}"`);
-        // Wait 7 seconds for the call to connect, then JARVIS speaks aloud into the speakerphone
-        setTimeout(async () => {
-          await speak(`Hello! This is Sachin's automated assistant speaking. Sachin asked me to inform you: ${task}. Thank you!`);
-        }, 7000);
+
+        // Wait for user to tap ENTER or fallback to 18 seconds
+        await waitForPickupAndSpeak(spokenText);
       } else {
         await speak(callRes.message || `Unable to place call: ${callRes.error}`);
       }
