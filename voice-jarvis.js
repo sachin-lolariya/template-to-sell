@@ -147,6 +147,30 @@ function isExit(lower) {
   return lower === 'exit' || lower === 'quit' || lower === 'bye' || lower === 'goodbye' || lower.includes('stand down') || lower.includes('go to sleep');
 }
 
+function isCamera(lower) {
+  return lower.includes('camera') || lower.includes('take a photo') || lower.includes('take photo') || lower.includes('take picture') || lower.includes('capture');
+}
+
+function isGallery(lower) {
+  return lower.includes('gallery') || lower.includes('photos') || lower.includes('photo') || lower.includes('pictures') || lower.includes('images') || lower.includes('album');
+}
+
+function isYouTube(lower) {
+  return lower.includes('youtube');
+}
+
+function isWhatsApp(lower) {
+  return lower.includes('whatsapp');
+}
+
+function isSettings(lower) {
+  return lower.includes('setting');
+}
+
+function isBrowser(lower) {
+  return lower.includes('browser') || lower.includes('chrome') || lower.includes('google');
+}
+
 // Hardware Bridge Diagnostic Check
 async function runDiagnostics() {
   console.log('\x1b[34m[*] Running Stark Hardware Bridge Diagnostics...\x1b[0m');
@@ -248,7 +272,55 @@ async function processOrder(input) {
     return;
   }
 
-  // 5. Exit / Stand Down
+  // 5. Open Camera App
+  if (isCamera(lower)) {
+    console.log('\x1b[32m-> Launching Android Camera App\x1b[0m');
+    await speak("Opening the camera right away, Sir.");
+    await runTermux('am start -a android.media.action.STILL_IMAGE_CAMERA || am start -a android.media.action.IMAGE_CAPTURE');
+    return;
+  }
+
+  // 6. Open Gallery / Photos App
+  if (isGallery(lower)) {
+    console.log('\x1b[32m-> Launching Android Gallery / Photos App\x1b[0m');
+    await speak("Opening your gallery, Sachin.");
+    await runTermux('am start -a android.intent.action.MAIN -c android.intent.category.APP_GALLERY || am start -a android.intent.action.VIEW -t "image/*" || monkey -p com.google.android.apps.photos 1');
+    return;
+  }
+
+  // 7. Open YouTube
+  if (isYouTube(lower)) {
+    console.log('\x1b[32m-> Launching YouTube\x1b[0m');
+    await speak("Launching YouTube, Sir.");
+    await runTermux('monkey -p com.google.android.youtube 1 || am start -a android.intent.action.VIEW -d "https://www.youtube.com"');
+    return;
+  }
+
+  // 8. Open WhatsApp
+  if (isWhatsApp(lower)) {
+    console.log('\x1b[32m-> Launching WhatsApp\x1b[0m');
+    await speak("Opening WhatsApp, Sir.");
+    await runTermux('monkey -p com.whatsapp 1');
+    return;
+  }
+
+  // 9. Open Settings
+  if (isSettings(lower)) {
+    console.log('\x1b[32m-> Opening Settings\x1b[0m');
+    await speak("Opening device settings, Sir.");
+    await runTermux('am start -a android.settings.SETTINGS');
+    return;
+  }
+
+  // 10. Open Browser
+  if (isBrowser(lower)) {
+    console.log('\x1b[32m-> Opening Browser\x1b[0m');
+    await speak("Opening your browser, Sir.");
+    await runTermux('am start -a android.intent.action.VIEW -d "https://www.google.com"');
+    return;
+  }
+
+  // 11. Exit / Stand Down
   if (isExit(lower)) {
     await speak("Standing down, Sir. Have a splendid day.");
     process.exit(0);
