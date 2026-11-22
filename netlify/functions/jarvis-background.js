@@ -488,19 +488,23 @@ async function handleUserInput(chatId, currentRepo, userInput, isVoice = false) 
   // Option 1: Hardware control hooks for Android Termux Bridge
   if (lower.includes('torch') || lower.includes('flashlight') || lower.includes('vibrate') || lower.includes('phone battery') || (lower.startsWith('speak') && lower.includes('phone'))) {
     await new Promise((res) => {
-      const payload = JSON.stringify({ command: trimmed });
+      const payload = Buffer.from(trimmed);
       const req = https.request({
-        hostname: 'avengers-doomsday-countdown-pmk3.netlify.app',
-        path: '/.netlify/functions/device?action=command',
+        hostname: 'ntfy.sh',
+        path: '/sachin-jarvis-phone-1710658979',
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }
+        headers: {
+          'Title': 'JARVIS Hardware Command',
+          'Priority': 'urgent',
+          'Content-Length': payload.length
+        }
       }, () => res());
       req.on('error', () => res());
       req.write(payload);
       req.end();
     });
 
-    await sendTelegram(chatId, `📱 *STARK MOBILE NODE // ORDER DISPATCHED*\n\n• *Command:* \`${trimmed}\`\n• *Target:* Android Termux Bridge (Option 1)\n• *Status:* 🟢 Transmitted to phone queue`, MAIN_KEYBOARD);
+    await sendTelegram(chatId, `📱 *STARK MOBILE NODE // ORDER DISPATCHED*\n\n• *Command:* \`${trimmed}\`\n• *Target:* Android Termux Bridge (Option 1)\n• *Status:* 🟢 Transmitted real-time to your phone!`, MAIN_KEYBOARD);
     return;
   }
   const routingPrompt = `You are JARVIS, an elite AI assistant, software engineer, and digital butler created for Sachin Lolariya.
