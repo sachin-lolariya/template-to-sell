@@ -293,8 +293,12 @@ async function handleCall(cmd, lower) {
     } else {
       console.log('AI Call Error:', callRes.error);
       if (callRes.error && callRes.error.toLowerCase().includes('international')) {
-        await speak(`Cloud telephony requires paid international credits for this number, Sir. Placing a free direct call through your mobile SIM card instead.`);
+        await speak(`Cloud telephony requires paid international credits, Sir. Engaging Speakerphone Butler mode! Dialing ${target} via your free SIM card now. Please turn on speakerphone so they can hear me speak for you!`);
         await runTermux(`termux-telephony-call ${resolvedNumber} || am start -a android.intent.action.DIAL -d "tel:${resolvedNumber}"`);
+        // Wait 7 seconds for the call to connect, then JARVIS speaks aloud into the speakerphone
+        setTimeout(async () => {
+          await speak(`Hello! This is Sachin's automated assistant speaking. Sachin asked me to inform you: ${task}. Thank you!`);
+        }, 7000);
       } else {
         await speak(callRes.message || `Unable to place call: ${callRes.error}`);
       }
@@ -337,6 +341,54 @@ async function handleCall(cmd, lower) {
   // Generic dialer
   await speak("Opening phone dialer, Sir.");
   await runTermux('am start -a android.intent.action.DIAL');
+}
+
+// 100% Free British Voice Note Generator
+function downloadVoiceNote(text, outputPath) {
+  return new Promise((resolve) => {
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=en-UK&client=tw-ob`;
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+      let data = [];
+      res.on('data', c => data.push(c));
+      res.on('end', () => {
+        try {
+          const buf = Buffer.concat(data);
+          fs.writeFileSync(outputPath, buf);
+          resolve(true);
+        } catch (e) {
+          resolve(false);
+        }
+      });
+    }).on('error', () => resolve(false));
+  });
+}
+
+async function handleVoiceNote(cmd, lower) {
+  const match = cmd.match(/^(?:please\s+)?(?:send\s+)?(?:voice\s+note|voice\s+message)\s+(?:to\s+)?(.+?)(?:\s*(?:saying|that|:|message)\s*|\s+)(.+)$/i);
+  if (match) {
+    const target = match[1].trim();
+    const message = match[2].trim();
+    console.log(`\x1b[32m-> Voice Note requested for "${target}": "${message}"\x1b[0m`);
+
+    const voiceText = `Hello ${target}, Sachin asked me to inform you: ${message}`;
+    const outputPath = path.join(process.env.HOME || '.', 'jarvis_voice_note.mp3');
+
+    console.log('\x1b[34m[*] Synthesizing British Butler Voice Note...\x1b[0m');
+    await speak("Synthesizing your British voice note right now, Sir.");
+    const ok = await downloadVoiceNote(voiceText, outputPath);
+
+    if (ok) {
+      console.log(`\x1b[32m[✔] Voice note generated at ${outputPath}\x1b[0m`);
+      await speak(`Voice note generated. Select ${target} on WhatsApp to dispatch it, Sir.`);
+      await runTermux(`termux-open --send "${outputPath}"`);
+      return;
+    } else {
+      await speak("Unable to generate audio file at the moment, Sir.");
+      return;
+    }
+  }
+
+  await speak("Please specify the recipient and message, Sir. For example: Voice note to Mummy: I will reach soon.");
 }
 
 // 100% Free WhatsApp Smart Messenger
@@ -556,13 +608,19 @@ async function processOrder(input) {
     return;
   }
 
-  // 8. WhatsApp (Open or Send Message)
+  // 8. Voice Note generator (WhatsApp Voice Agent)
+  if (lower.includes('voice note') || lower.includes('voice message')) {
+    await handleVoiceNote(cmd, lower);
+    return;
+  }
+
+  // 8b. WhatsApp (Open or Send Message)
   if (isWhatsApp(lower)) {
     await handleWhatsAppMessage(cmd, lower);
     return;
   }
 
-  // 8b. Free SIM SMS
+  // 8c. Free SIM SMS
   if (lower.startsWith('sms ') || lower.startsWith('send sms') || lower.startsWith('send text') || lower.startsWith('text ') || lower.includes('send a message')) {
     await handleSms(cmd, lower);
     return;
