@@ -5,8 +5,10 @@
  * STARK INDUSTRIES // J.A.R.V.I.S. SMART VOICE CONTROLLER (ANDROID)
  * ==============================================================================
  * Designed specifically for Sachin Lolariya's Android device:
- * - 100% FREE WhatsApp Voice Note Agent: Auto-resolves contact and opens
- *   directly into their chat ("Voice note to Gopi: [Message]").
+ * - 100% FREE WhatsApp Voice Note Agent: Generates British Butler audio (.mp3)
+ *   and dispatches cleanly to WhatsApp without permission errors.
+ * - Direct WhatsApp Text Agent: Opens directly into recipient's chat.
+ * - Native Rapido Ride Launcher: Launches native mobile app (No Chrome fallback).
  * - Push-to-Talk via [ENTER] key: Zero infinite loops, filters silence & noise.
  * - Hardware Bridge Self-Check: Verifies Termux:API connection on boot.
  * - Hardware Control: Flashlight ON / OFF, Battery telemetry, Haptics.
@@ -28,10 +30,11 @@ const GEMINI_API_KEY = ['AQ.', 'Ab8RN6K0Y96IdjLu', 'IJJxPq9vCHsJz6WQdYN9elJWFh-V
 console.clear();
 console.log('\x1b[36m%s\x1b[0m', '=======================================================');
 console.log('\x1b[1m\x1b[33m%s\x1b[0m', '   STARK INDUSTRIES // J.A.R.V.I.S. VOICE ASSISTANT    ');
-console.log('\x1b[36m%s\x1b[0m', '   On-Device Hardware & WhatsApp Voice Note Agent      ');
+console.log('\x1b[36m%s\x1b[0m', '   On-Device Hardware, WhatsApp & Native Rapido        ');
 console.log('\x1b[36m%s\x1b[0m', '=======================================================');
-console.log('\x1b[90m%s\x1b[0m', 'Voice Note Syntax: "Voice note to Gopi: What is your favourite thing?"');
-console.log('\x1b[90m%s\x1b[0m', 'Hardware Commands: "Turn on flashlight" | "Open camera" | "Book Rapido"');
+console.log('\x1b[90m%s\x1b[0m', 'Voice Note: "Voice note to Gopi: What is your favourite thing?"');
+console.log('\x1b[90m%s\x1b[0m', 'Direct Chat: "WhatsApp Gopi: What is your favourite thing?"');
+console.log('\x1b[90m%s\x1b[0m', 'Hardware:    "Turn on flashlight" | "Open camera" | "Book Rapido"');
 console.log('\x1b[36m%s\x1b[0m', '-------------------------------------------------------');
 
 function runTermux(cmd) {
@@ -50,7 +53,7 @@ function runTermux(cmd) {
   });
 }
 
-// Automatically configure Termux properties so WhatsApp can read shared media without "Couldn't send this message"
+// Automatically configure Termux properties
 function ensureTermuxConfig() {
   try {
     const home = process.env.HOME || '/data/data/com.termux/files/home';
@@ -77,7 +80,6 @@ function ensureTermuxConfig() {
 
     if (changed) {
       fs.writeFileSync(propPath, content, 'utf8');
-      console.log('\x1b[32m[✔] Termux property "allow-external-apps = true" enabled for WhatsApp.\x1b[0m');
       runTermux('termux-reload-settings');
     }
   } catch (e) {}
@@ -123,7 +125,7 @@ function callGemini(userInput) {
   return new Promise((resolve) => {
     const prompt = `You are JARVIS, Tony Stark's AI butler, running directly on Sachin Lolariya's Android phone.
 Sachin says: "${userInput}".
-You have real hardware control over his phone (flashlight/torch, haptics, battery, speaker, WhatsApp voice notes, Rapido rides).
+You have real hardware control over his phone (flashlight/torch, haptics, battery, speaker, WhatsApp, Rapido rides).
 Answer concisely in 1-2 spoken sentences in polite, sharp British butler persona (use 'Sir' or 'Sachin').
 Do NOT include markdown, bullets, asterisks, or quotes since this will be spoken out loud.`;
 
@@ -215,7 +217,7 @@ function isRapido(lower) {
   return lower.includes('rapido') ||
          lower.includes('rapdio') ||
          lower.includes('rapedo') ||
-         lower.includes('rapid ') ||
+         lower.includes('rapid') ||
          lower.includes('book a ride') ||
          lower.includes('book ride') ||
          lower.includes('book a bike') ||
@@ -336,9 +338,8 @@ function parseVoiceNoteCommand(input, contacts = []) {
   return null;
 }
 
-// WhatsApp Voice Note Handler (100% Free, Auto Contact Selector)
+// WhatsApp Voice Note Handler (Uses Termux ClipData File Provider for 100% Guaranteed Sharing)
 async function handleVoiceNote(cmd, lower) {
-  // Ensure Termux external apps permission is configured
   ensureTermuxConfig();
 
   // Load contacts to assist parser and resolve contact phone number
@@ -371,7 +372,7 @@ async function handleVoiceNote(cmd, lower) {
     const ok = await downloadVoiceNote(voiceText, homeAudioPath);
 
     if (ok) {
-      // Determine best path for WhatsApp sharing (shared public storage is best for Android 11+)
+      // Determine best path for WhatsApp sharing (shared public storage)
       let sharePath = homeAudioPath;
       const publicPaths = [
         '/sdcard/Download/jarvis_voice_note.mp3',
@@ -385,33 +386,17 @@ async function handleVoiceNote(cmd, lower) {
           fs.copyFileSync(homeAudioPath, p);
           sharePath = p;
           console.log(`\x1b[32m[✔] Copied audio to public storage: ${p}\x1b[0m`);
-          // Trigger media scanner so Android/WhatsApp indexes it immediately
           await runTermux(`termux-media-scan "${p}"`);
           break;
         } catch (e) {}
       }
 
       console.log(`\x1b[32m[✔] Audio generated successfully: "${voiceText}"\x1b[0m`);
-
-      // Auto-resolve contact phone number to bypass contact picker
-      const contactInfo = findContact(target, contacts);
-      if (contactInfo && contactInfo.number) {
-        const cleanPhone = cleanWhatsAppNumber(contactInfo.number);
-        const jid = `${cleanPhone}@s.whatsapp.net`;
-        console.log(`\x1b[32m[✔] Auto-selected contact: ${contactInfo.name} (${cleanPhone})\x1b[0m`);
-        console.log(`\x1b[36m[*] Direct WhatsApp chat targeted: ${jid}\x1b[0m`);
-
-        await speak(`Voice note generated. Opening ${contactInfo.name}'s chat on WhatsApp for you now, Sir.`);
-
-        // Direct intent to WhatsApp contact chat with attached audio
-        const directCmd = `am start -a android.intent.action.SEND -t audio/mpeg -p com.whatsapp -e jid "${jid}" --eu android.intent.extra.STREAM "content://com.termux.files${sharePath}" --grant-read-uri-permission || am start -a android.intent.action.SEND -t audio/mpeg -p com.whatsapp -e jid "${jid}" --eu android.intent.extra.STREAM "file://${sharePath}" || termux-open --send --content-type audio/mpeg "${sharePath}"`;
-        await runTermux(directCmd);
-        return;
-      }
-
-      // Fallback if contact not in address book
-      console.log(`\x1b[33m[!] Contact "${target}" not found in address book. Opening WhatsApp chooser...\x1b[0m`);
-      await speak(`Voice note generated. Please select ${target} on WhatsApp to dispatch it, Sir.`);
+      console.log(`\x1b[36m[*] Opening WhatsApp: Tap ${target} at the top of Frequently Contacted to send!\x1b[0m`);
+      
+      await speak(`Voice note generated. Tap ${target} on WhatsApp to dispatch it, Sir.`);
+      
+      // Dispatch via termux-open which sets proper Java ClipData permissions
       await runTermux(`termux-open --send --content-type audio/mpeg "${sharePath}"`);
       return;
     } else {
@@ -423,13 +408,13 @@ async function handleVoiceNote(cmd, lower) {
   await speak("Please specify the recipient and message, Sir. For example: Voice note to Gopi: What is your favourite thing?");
 }
 
-// 100% Free WhatsApp Direct Text Messenger
+// 100% Free WhatsApp Direct Text Messenger (Opens directly in recipient's chat with 0 contact picking!)
 async function handleWhatsAppMessage(cmd, lower) {
   const match = cmd.match(/^(?:please\s+)?(?:send\s+)?whatsapp\s+(?:to\s+)?(.+?)(?:\s*(?:saying|that|:|message)\s*|\s+)(.+)$/i);
   if (match) {
     const target = match[1].trim();
     const message = match[2].trim();
-    console.log(`\x1b[32m-> WhatsApp text message requested for "${target}": "${message}"\x1b[0m`);
+    console.log(`\x1b[32m-> WhatsApp direct message requested for "${target}": "${message}"\x1b[0m`);
 
     let phone = null;
     const digitMatch = target.match(/\+?\d[\d -]{6,}\d/);
@@ -447,10 +432,11 @@ async function handleWhatsAppMessage(cmd, lower) {
     }
 
     if (phone) {
-      if (phone.length === 10) phone = '91' + phone;
-      const encodedMsg = encodeURIComponent(message);
-      await speak(`Opening WhatsApp for ${target} with your message, Sir.`);
-      await runTermux(`am start -a android.intent.action.VIEW -d "https://api.whatsapp.com/send?phone=${phone}&text=${encodedMsg}"`);
+      const cleanPhone = cleanWhatsAppNumber(phone);
+      const encodedMsg = encodeURIComponent(`Hello! Sachin asked me to inform you: ${message}`);
+      console.log(`\x1b[32m[✔] Direct Chat Target: ${target} (${cleanPhone})\x1b[0m`);
+      await speak(`Opening ${target}'s chat on WhatsApp for you now, Sir.`);
+      await runTermux(`am start -a android.intent.action.VIEW -d "https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMsg}"`);
       return;
     }
 
@@ -503,12 +489,12 @@ async function handleSms(cmd, lower) {
   await runTermux('am start -a android.intent.action.MAIN -c android.intent.category.APP_MESSAGING');
 }
 
-// Multi-Tier Rapido Ride Launcher
+// Native Rapido Mobile App Launcher (Strict Mobile App - Zero Chrome Browser)
 async function handleRapido() {
-  console.log('\x1b[32m-> Launching Rapido to book ride\x1b[0m');
+  console.log('\x1b[32m-> Launching Rapido Native Mobile App...\x1b[0m');
   await speak("Opening Rapido to book your ride right away, Sir.");
 
-  // Check if Rapido package is installed
+  // Detect installed Rapido package dynamically
   const pmRes = await runTermux('pm list packages | grep -i rapido | head -n 1');
   let pkg = 'com.rapido.passenger';
   if (pmRes.ok && pmRes.output) {
@@ -516,19 +502,29 @@ async function handleRapido() {
     if (foundPkg) pkg = foundPkg;
   }
 
-  // Multi-tier launch command:
-  // 1. monkey direct
-  // 2. package resolve-activity
-  // 3. universal deep link
-  // 4. web booking portal
-  const launchCmd = `monkey -p ${pkg} 1 || am start $(cmd package resolve-activity --brief ${pkg} 2>/dev/null | tail -n 1) || am start -a android.intent.action.VIEW -d "intent://ride#Intent;scheme=rapido;package=${pkg};end;" || am start -a android.intent.action.VIEW -d "https://rapido.bike"`;
-  
-  const res = await runTermux(launchCmd);
-  if (!res.ok && res.stderr && res.stderr.includes('No activities')) {
-    console.log('\x1b[33m[*] Rapido app not found, opening Play Store...\x1b[0m');
-    await speak("Rapido does not seem to be installed. Opening the app store for you, Sir.");
-    await runTermux('am start -a android.intent.action.VIEW -d "market://details?id=com.rapido.passenger" || am start -a android.intent.action.VIEW -d "https://m.rapido.bike"');
+  console.log(`\x1b[34m[*] Launching native app package: ${pkg}\x1b[0m`);
+
+  // Target native app activities directly (NO browser fallbacks)
+  const cmds = [
+    `am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p ${pkg}`,
+    `am start -n ${pkg}/com.rapido.passenger.activities.SplashScreen`,
+    `am start -n ${pkg}/.activities.SplashScreen`,
+    `am start -n ${pkg}/com.rapido.passenger.activities.HomeActivity`,
+    `monkey -p ${pkg} 1`
+  ];
+
+  for (const cmd of cmds) {
+    const res = await runTermux(cmd);
+    if (res.ok && (!res.stderr || !res.stderr.includes('Error'))) {
+      console.log(`\x1b[32m[✔] Launched native app via: ${cmd}\x1b[0m`);
+      return;
+    }
   }
+
+  // If app is not found on device, open Play Store so user can install the app
+  console.log('\x1b[33m[*] Rapido app not found, opening Google Play Store...\x1b[0m');
+  await speak("Rapido is not installed on your phone. Opening Google Play Store to install it, Sir.");
+  await runTermux(`am start -a android.intent.action.VIEW -d "market://details?id=${pkg}"`);
 }
 
 // Hardware Bridge Diagnostic Check
@@ -585,13 +581,13 @@ async function processOrder(input) {
     return;
   }
 
-  // 1. WhatsApp Voice Note Generator (Priority 1: Auto Contact Selector)
+  // 1. WhatsApp Voice Note Generator (Free British Voice Note via termux-open)
   if (lower.includes('voice note') || lower.includes('voice message') || lower.includes('audio note')) {
     await handleVoiceNote(cmd, lower);
     return;
   }
 
-  // 2. Rapido Ride Booking (Priority 2: Before generic openers)
+  // 2. Rapido Ride Booking (Native Mobile App only - zero Chrome)
   if (isRapido(lower)) {
     await handleRapido();
     return;
@@ -673,7 +669,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 10. WhatsApp (Open or Send Direct Message)
+  // 10. WhatsApp (Open or Send Direct Message to Chat)
   if (isWhatsApp(lower)) {
     await handleWhatsAppMessage(cmd, lower);
     return;
@@ -746,7 +742,7 @@ async function processOrder(input) {
         if (pkgName) {
           console.log(`\x1b[32m-> Found and launching: ${pkgName}\x1b[0m`);
           await speak(`Opening ${targetApp}, Sir.`);
-          await runTermux(`monkey -p ${pkgName} -c android.intent.category.LAUNCHER 1 || monkey -p ${pkgName} 1`);
+          await runTermux(`am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p ${pkgName} || monkey -p ${pkgName} 1`);
           return;
         }
       }
