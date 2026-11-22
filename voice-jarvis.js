@@ -197,7 +197,13 @@ async function processOrder(input) {
     if (res.output) console.log('\x1b[90m[torch out]:', res.output, '\x1b[0m');
     if (res.stderr) console.log('\x1b[31m[torch err]:', res.stderr, '\x1b[0m');
 
-    if (res.ok) {
+    if (res.output && (res.output.includes('Google Play') || res.output.includes('not yet available'))) {
+      console.log('\x1b[31m[!] Google Play Termux detected: Hardware API is blocked by Google Play policy.\x1b[0m');
+      await speak("Your Termux is from Google Play Store which blocks hardware control. Please reinstall Termux from F-Droid, Sir.");
+      return;
+    }
+
+    if (res.ok && (!res.output || res.output.length === 0)) {
       await speak("Flashlight activated, Sir.");
     } else {
       console.log('Torch error:', res.error);
