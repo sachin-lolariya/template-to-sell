@@ -15,8 +15,32 @@
  */
 
 const https = require('https');
+const fs = require('fs');
+const path = require('path');
 const { exec } = require('child_process');
 const readline = require('readline');
+
+const CONFIG_PATH = path.join(process.env.HOME || '.', '.jarvis-config.json');
+
+function loadConfig() {
+  try {
+    if (fs.existsSync(CONFIG_PATH)) {
+      return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    }
+  } catch (e) {}
+  return {};
+}
+
+function saveConfig(updates) {
+  try {
+    const existing = loadConfig();
+    const merged = { ...existing, ...updates };
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(merged, null, 2), 'utf8');
+  } catch (e) {}
+}
+
+const config = loadConfig();
+let BLAND_API_KEY = config.bland_api_key || process.env.BLAND_API_KEY || '';
 
 // Secure token assembly to comply with GitHub push protection
 const GEMINI_API_KEY = ['AQ.', 'Ab8RN6K0Y96IdjLu', 'IJJxPq9vCHsJz6WQdYN9elJWFh-VGfjbTg'].join('');
@@ -179,8 +203,100 @@ function isRapido(lower) {
   return lower.includes('rapido') || lower.includes('book a ride') || lower.includes('book ride') || lower.includes('book a bike') || lower.includes('book bike') || lower.includes('book cab') || lower.includes('book a cab') || lower.includes('get a ride') || lower.includes('find a ride');
 }
 
+function triggerAiCall(phoneNumber, task, recipientName) {
+  return new Promise((resolve) => {
+    if (!BLAND_API_KEY) {
+      resolve({
+        ok: false,
+        error: "NO_KEY",
+        message: "To make autonomous AI phone calls, Sir, we need a Bland.ai API key. Sign up free at bland.ai, then type: 'key YOUR_KEY'."
+      });
+      return;
+    }
+
+    let clean = phoneNumber.replace(/[^0-9+]/g, '');
+    if (clean.length === 10) clean = '+91' + clean;
+    else if (!clean.startsWith('+')) clean = '+' + clean;
+
+    const payload = JSON.stringify({
+      phone_number: clean,
+      task: `You are J.A.R.V.I.S., Tony Stark's iconic AI butler, calling on behalf of Sachin Lolariya. Speak politely, sharply, and concisely in your British butler persona (address them courteously). Your mission: ${task}. Listen attentively to what they say, answer their questions, confirm their response, and conclude the call warmly.`,
+      voice: "british",
+      first_sentence: `Good day. I am J.A.R.V.I.S., calling on behalf of Sachin Lolariya.`,
+      wait_for_greeting: true,
+      record: true
+    });
+
+    const req = https.request({
+      hostname: 'api.bland.ai',
+      path: '/v1/calls',
+      method: 'POST',
+      headers: {
+        'Authorization': BLAND_API_KEY,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    }, (res) => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(d);
+          if (json.status === 'success' || json.call_id) {
+            resolve({ ok: true, callId: json.call_id });
+          } else {
+            resolve({ ok: false, error: json.message || json.error || 'Failed to dispatch call' });
+          }
+        } catch (e) {
+          resolve({ ok: false, error: 'Invalid response from telecom server' });
+        }
+      });
+    });
+    req.on('error', (e) => resolve({ ok: false, error: e.message }));
+    req.write(payload);
+    req.end();
+  });
+}
+
 async function handleCall(cmd, lower) {
-  // Check if phone digits exist in command
+  // Check if this is an Autonomous AI Conversation Call (e.g., "call Rahul and tell him...", "call Mom and ask...")
+  const aiMatch = cmd.match(/^(?:please\s+)?(?:call|dial|phone|ai\s+call)\s+(.+?)\s+(?:and\s+tell|and\s+ask|and\s+say|to\s+tell|to\s+ask)\s+(.+)$/i);
+  if (aiMatch) {
+    const target = aiMatch[1].trim();
+    const task = aiMatch[2].trim();
+    console.log(`\x1b[35m[*] Autonomous AI Call Requested -> Target: "${target}", Task: "${task}"\x1b[0m`);
+
+    // Resolve phone number for target
+    let resolvedNumber = null;
+    const digitMatch = target.match(/\+?\d[\d -]{6,}\d/);
+    if (digitMatch) {
+      resolvedNumber = digitMatch[0].replace(/[\s-]/g, '');
+    } else {
+      const cRes = await runTermux('termux-contact-list');
+      if (cRes.ok && cRes.output) {
+        try {
+          const contacts = JSON.parse(cRes.output);
+          const found = contacts.find(c => c.name && c.name.toLowerCase().includes(target.toLowerCase()));
+          if (found && found.number) resolvedNumber = found.number;
+        } catch (e) {}
+      }
+    }
+
+    if (!resolvedNumber) {
+      await speak(`I could not find a phone number for ${target} in your contacts, Sir.`);
+      return;
+    }
+
+    await speak(`Engaging autonomous calling protocol. Calling ${target} to ${task}, Sir.`);
+    const callRes = await triggerAiCall(resolvedNumber, task, target);
+    if (callRes.ok) {
+      await speak(`Call dispatched successfully, Sir. I am speaking with ${target} now.`);
+    } else {
+      await speak(callRes.message || `Unable to place call: ${callRes.error}`);
+    }
+    return;
+  }
+
+  // Check if phone digits exist in command for regular call
   const digitMatch = cmd.match(/\+?\d[\d -]{6,}\d/);
   if (digitMatch) {
     const cleanNum = digitMatch[0].replace(/[\s-]/g, '');
@@ -258,6 +374,18 @@ async function processOrder(input) {
     await runDiagnostics();
     await speak("Diagnostics complete, Sir.");
     return;
+  }
+
+  // Set Bland.ai API Key command
+  if (lower.startsWith('key ') || lower.startsWith('bland ') || lower.startsWith('set key ')) {
+    const newKey = cmd.replace(/^(?:set\s+)?(?:key|bland)\s+/i, '').trim();
+    if (newKey) {
+      saveConfig({ bland_api_key: newKey });
+      BLAND_API_KEY = newKey;
+      console.log('\x1b[32m[✔] Bland.ai API Key saved successfully!\x1b[0m');
+      await speak("Bland API key saved, Sir. Autonomous calling is now active.");
+      return;
+    }
   }
 
   // 1. Flashlight ON
