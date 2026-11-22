@@ -50,6 +50,39 @@ function runTermux(cmd) {
   });
 }
 
+// Automatically configure Termux properties so WhatsApp can read shared media without "Couldn't send this message"
+function ensureTermuxConfig() {
+  try {
+    const home = process.env.HOME || '/data/data/com.termux/files/home';
+    const termuxDir = path.join(home, '.termux');
+    const propPath = path.join(termuxDir, 'termux.properties');
+
+    if (!fs.existsSync(termuxDir)) {
+      fs.mkdirSync(termuxDir, { recursive: true });
+    }
+
+    let content = '';
+    if (fs.existsSync(propPath)) {
+      content = fs.readFileSync(propPath, 'utf8');
+    }
+
+    let changed = false;
+    if (content.match(/#\s*allow-external-apps\s*=\s*true/i)) {
+      content = content.replace(/#\s*allow-external-apps\s*=\s*true/i, 'allow-external-apps = true');
+      changed = true;
+    } else if (!content.includes('allow-external-apps = true') && !content.includes('allow-external-apps=true')) {
+      content += '\nallow-external-apps = true\n';
+      changed = true;
+    }
+
+    if (changed) {
+      fs.writeFileSync(propPath, content, 'utf8');
+      console.log('\x1b[32m[✔] Termux property "allow-external-apps = true" enabled for WhatsApp.\x1b[0m');
+      runTermux('termux-reload-settings');
+    }
+  } catch (e) {}
+}
+
 // Speak aloud via phone speaker in British Butler voice
 async function speak(text) {
   if (!text) return;
@@ -250,6 +283,9 @@ function parseVoiceNoteCommand(input, contacts = []) {
 
 // WhatsApp Voice Note Handler (100% Free, Zero Waiting, Zero Ringing)
 async function handleVoiceNote(cmd, lower) {
+  // Ensure Termux external apps permission is configured
+  ensureTermuxConfig();
+
   // Try to load contacts to assist parser if available
   let contacts = [];
   try {
@@ -270,28 +306,43 @@ async function handleVoiceNote(cmd, lower) {
     // Voice text spoken by JARVIS in the audio file
     const voiceText = `Hello ${target}, Sachin asked me to inform you: ${message}`;
     
-    // Primary path in $HOME, secondary fallback in Downloads
-    const outputPath = path.join(process.env.HOME || '.', 'jarvis_voice_note.mp3');
+    // Primary path in $HOME
+    const home = process.env.HOME || '/data/data/com.termux/files/home';
+    const homeAudioPath = path.join(home, 'jarvis_voice_note.mp3');
 
     console.log('\x1b[34m[*] Synthesizing British Butler Voice Note audio (.mp3)...\x1b[0m');
     await speak(`Synthesizing your British voice note for ${target} right now, Sir.`);
 
-    const ok = await downloadVoiceNote(voiceText, outputPath);
+    const ok = await downloadVoiceNote(voiceText, homeAudioPath);
 
     if (ok) {
-      // Also try to mirror to /sdcard/Download if storage access exists
-      try {
-        const sdcardPath = '/sdcard/Download/jarvis_voice_note.mp3';
-        fs.copyFileSync(outputPath, sdcardPath);
-      } catch (e) {}
+      // Determine best path for WhatsApp sharing (shared public storage is best for Android 11+)
+      let sharePath = homeAudioPath;
+      const publicPaths = [
+        '/sdcard/Download/jarvis_voice_note.mp3',
+        path.join(home, 'storage', 'downloads', 'jarvis_voice_note.mp3'),
+        '/sdcard/Music/jarvis_voice_note.mp3',
+        path.join(home, 'storage', 'music', 'jarvis_voice_note.mp3')
+      ];
+
+      for (const p of publicPaths) {
+        try {
+          fs.copyFileSync(homeAudioPath, p);
+          sharePath = p;
+          console.log(`\x1b[32m[✔] Copied audio to public storage: ${p}\x1b[0m`);
+          // Trigger media scanner so Android/WhatsApp indexes it immediately
+          await runTermux(`termux-media-scan "${p}"`);
+          break;
+        } catch (e) {}
+      }
 
       console.log(`\x1b[32m[✔] Audio generated successfully: "${voiceText}"\x1b[0m`);
-      console.log(`\x1b[36m[*] Opening WhatsApp share sheet...\x1b[0m`);
+      console.log(`\x1b[36m[*] Dispatching to WhatsApp with MIME type audio/mpeg: ${sharePath}\x1b[0m`);
       
       await speak(`Voice note generated. Select ${target} on WhatsApp to dispatch it, Sir.`);
       
-      // Dispatch via termux-open with Android content provider
-      await runTermux(`termux-open --send "${outputPath}"`);
+      // Dispatch via termux-open with explicit MIME type audio/mpeg
+      await runTermux(`termux-open --send --content-type audio/mpeg "${sharePath}"`);
       return;
     } else {
       await speak("Unable to generate the voice note audio file at the moment, Sir.");
@@ -385,20 +436,31 @@ async function handleSms(cmd, lower) {
 // Hardware Bridge Diagnostic Check
 async function runDiagnostics() {
   console.log('\x1b[34m[*] Running Stark Hardware Bridge Diagnostics...\x1b[0m');
+  ensureTermuxConfig();
+
   const bRes = await runTermux('termux-battery-status');
   if (bRes.ok && bRes.output && bRes.output.includes('percentage')) {
     try {
       const b = JSON.parse(bRes.output);
       console.log(`\x1b[32m[✔] Termux:API Bridge: ONLINE (Battery: ${b.percentage}%, Status: ${b.status})\x1b[0m`);
-      return true;
     } catch (e) {}
+  } else {
+    console.log('\x1b[31m[✖] Termux:API Bridge: OFFLINE or BLOCKED\x1b[0m');
+    console.log('\x1b[33m    Troubleshoot Checklist:\x1b[0m');
+    console.log('\x1b[33m    1. Open the "Termux:API" app from home screen once.\x1b[0m');
+    console.log('\x1b[33m    2. Settings > Apps > Termux:API > Permissions > Camera: Allow.\x1b[0m');
+    console.log('\x1b[33m    3. Ensure Termux and Termux:API are both from F-Droid.\x1b[0m');
   }
-  console.log('\x1b[31m[✖] Termux:API Bridge: OFFLINE or BLOCKED\x1b[0m');
-  console.log('\x1b[33m    Troubleshoot Checklist:\x1b[0m');
-  console.log('\x1b[33m    1. Open the "Termux:API" app from home screen once.\x1b[0m');
-  console.log('\x1b[33m    2. Settings > Apps > Termux:API > Permissions > Camera: Allow.\x1b[0m');
-  console.log('\x1b[33m    3. Ensure Termux and Termux:API are both from F-Droid.\x1b[0m');
-  return false;
+
+  // Storage Diagnostic
+  const home = process.env.HOME || '/data/data/com.termux/files/home';
+  const hasStorage = fs.existsSync('/sdcard/Download') || fs.existsSync(path.join(home, 'storage', 'downloads'));
+  if (hasStorage) {
+    console.log('\x1b[32m[✔] Android Shared Storage: ACCESSIBLE\x1b[0m');
+  } else {
+    console.log('\x1b[33m[!] Android Shared Storage: NOT LINKED\x1b[0m');
+    console.log('\x1b[33m    Run "termux-setup-storage" in Termux so WhatsApp can receive voice notes directly.\x1b[0m');
+  }
 }
 
 // Process voice or text order
@@ -613,6 +675,7 @@ const rl = readline.createInterface({
 });
 
 async function main() {
+  ensureTermuxConfig();
   await runDiagnostics();
   await speak("J.A.R.V.I.S. voice controller initialized, Sachin.");
   promptUser();
