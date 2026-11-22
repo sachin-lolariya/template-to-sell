@@ -6,9 +6,9 @@
  * ==============================================================================
  * Designed specifically for Sachin Lolariya's Android device:
  * - 100% FREE WhatsApp Voice Note Agent: Generates British Butler audio (.mp3)
- *   and dispatches cleanly to WhatsApp without permission errors.
+ *   and dispatches cleanly to WhatsApp.
  * - Direct WhatsApp Text Agent: Opens directly into recipient's chat.
- * - Native Rapido Ride Launcher: Launches native mobile app (No Chrome fallback).
+ * - Multi-Candidate Native Rapido Launcher: Tests all activities and packages.
  * - Push-to-Talk via [ENTER] key: Zero infinite loops, filters silence & noise.
  * - Hardware Bridge Self-Check: Verifies Termux:API connection on boot.
  * - Hardware Control: Flashlight ON / OFF, Battery telemetry, Haptics.
@@ -32,9 +32,10 @@ console.log('\x1b[36m%s\x1b[0m', '==============================================
 console.log('\x1b[1m\x1b[33m%s\x1b[0m', '   STARK INDUSTRIES // J.A.R.V.I.S. VOICE ASSISTANT    ');
 console.log('\x1b[36m%s\x1b[0m', '   On-Device Hardware, WhatsApp & Native Rapido        ');
 console.log('\x1b[36m%s\x1b[0m', '=======================================================');
-console.log('\x1b[90m%s\x1b[0m', 'Voice Note: "Voice note to Gopi: What is your favourite thing?"');
+console.log('\x1b[90m%s\x1b[0m', 'Voice Note:  "Voice note to Gopi: What is your favourite thing?"');
 console.log('\x1b[90m%s\x1b[0m', 'Direct Chat: "WhatsApp Gopi: What is your favourite thing?"');
-console.log('\x1b[90m%s\x1b[0m', 'Hardware:    "Turn on flashlight" | "Open camera" | "Book Rapido"');
+console.log('\x1b[90m%s\x1b[0m', 'Ride:        "Book Rapido" | "Open Rapido"');
+console.log('\x1b[90m%s\x1b[0m', 'Hardware:    "Turn on flashlight" | "Open camera" | "Battery"');
 console.log('\x1b[36m%s\x1b[0m', '-------------------------------------------------------');
 
 function runTermux(cmd) {
@@ -338,7 +339,7 @@ function parseVoiceNoteCommand(input, contacts = []) {
   return null;
 }
 
-// WhatsApp Voice Note Handler (Uses Termux ClipData File Provider for 100% Guaranteed Sharing)
+// WhatsApp Voice Note Handler
 async function handleVoiceNote(cmd, lower) {
   ensureTermuxConfig();
 
@@ -489,42 +490,82 @@ async function handleSms(cmd, lower) {
   await runTermux('am start -a android.intent.action.MAIN -c android.intent.category.APP_MESSAGING');
 }
 
-// Native Rapido Mobile App Launcher (Strict Mobile App - Zero Chrome Browser)
+// Multi-Candidate Native Rapido Launcher (Tests all packages & activities without opening Chrome or Play Store)
 async function handleRapido() {
   console.log('\x1b[32m-> Launching Rapido Native Mobile App...\x1b[0m');
   await speak("Opening Rapido to book your ride right away, Sir.");
 
-  // Detect installed Rapido package dynamically
-  const pmRes = await runTermux('pm list packages | grep -i rapido | head -n 1');
-  let pkg = 'com.rapido.passenger';
-  if (pmRes.ok && pmRes.output) {
-    const foundPkg = pmRes.output.replace(/^package:/, '').trim();
-    if (foundPkg) pkg = foundPkg;
-  }
-
-  console.log(`\x1b[34m[*] Launching native app package: ${pkg}\x1b[0m`);
-
-  // Target native app activities directly (NO browser fallbacks)
-  const cmds = [
-    `am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p ${pkg}`,
-    `am start -n ${pkg}/com.rapido.passenger.activities.SplashScreen`,
-    `am start -n ${pkg}/.activities.SplashScreen`,
-    `am start -n ${pkg}/com.rapido.passenger.activities.HomeActivity`,
-    `monkey -p ${pkg} 1`
+  const candidatePackages = [
+    'com.rapido.passenger',
+    'com.rapido',
+    'com.rapido.rider',
+    'bike.rapido',
+    'com.roppen.rapido'
   ];
 
-  for (const cmd of cmds) {
-    const res = await runTermux(cmd);
-    if (res.ok && (!res.stderr || !res.stderr.includes('Error'))) {
-      console.log(`\x1b[32m[✔] Launched native app via: ${cmd}\x1b[0m`);
+  // Try to find any installed package matching rapido via user 0
+  try {
+    const pm = await runTermux('pm list packages --user 0 2>/dev/null | grep -Ei "rapido|roppen"');
+    if (pm.ok && pm.output) {
+      const lines = pm.output.split('\n');
+      for (const line of lines) {
+        const clean = line.replace(/^package:/, '').trim();
+        if (clean && !candidatePackages.includes(clean)) {
+          candidatePackages.unshift(clean);
+        }
+      }
+    }
+  } catch (e) {}
+
+  console.log(`\x1b[34m[*] Scanning Rapido packages:\x1b[0m`, candidatePackages.join(', '));
+
+  for (const pkg of candidatePackages) {
+    // 1. Try resolve-activity to find exact entry point
+    const resActivity = await runTermux(`cmd package resolve-activity --brief ${pkg} 2>/dev/null | tail -n 1`);
+    if (resActivity.ok && resActivity.output && !resActivity.output.includes('Error') && !resActivity.output.includes('No activities')) {
+      const comp = resActivity.output.trim();
+      console.log(`\x1b[32m[✔] Found entry point: ${comp}\x1b[0m`);
+      const launchRes = await runTermux(`am start -n ${comp}`);
+      if (launchRes.ok && (!launchRes.output || !launchRes.output.includes('Error'))) {
+        return;
+      }
+    }
+
+    // 2. Try known main activities
+    const activities = [
+      `${pkg}/.activities.SplashScreen`,
+      `${pkg}/com.rapido.passenger.activities.SplashScreen`,
+      `${pkg}/com.rapido.passenger.ui.main.MainActivity`,
+      `${pkg}/com.rapido.passenger.MainActivity`,
+      `${pkg}/com.rapido.passenger.activities.HomeActivity`
+    ];
+
+    for (const act of activities) {
+      const actRes = await runTermux(`am start -n ${act}`);
+      if (actRes.ok && (!actRes.output || !actRes.output.includes('Error'))) {
+        console.log(`\x1b[32m[✔] Launched via ${act}\x1b[0m`);
+        return;
+      }
+    }
+
+    // 3. Try native intent scheme
+    const intentRes = await runTermux(`am start -a android.intent.action.VIEW -d "intent://ride#Intent;scheme=rapido;package=${pkg};end;"`);
+    if (intentRes.ok && (!intentRes.output || !intentRes.output.includes('Error'))) {
+      console.log(`\x1b[32m[✔] Launched via intent scheme for ${pkg}\x1b[0m`);
+      return;
+    }
+
+    // 4. Try monkey
+    const monkeyRes = await runTermux(`monkey -p ${pkg} 1`);
+    if (monkeyRes.ok && (!monkeyRes.stderr || !monkeyRes.stderr.includes('No activities'))) {
+      console.log(`\x1b[32m[✔] Launched via monkey for ${pkg}\x1b[0m`);
       return;
     }
   }
 
-  // If app is not found on device, open Play Store so user can install the app
-  console.log('\x1b[33m[*] Rapido app not found, opening Google Play Store...\x1b[0m');
-  await speak("Rapido is not installed on your phone. Opening Google Play Store to install it, Sir.");
-  await runTermux(`am start -a android.intent.action.VIEW -d "market://details?id=${pkg}"`);
+  // If all automated attempts are blocked by Vivo security, inform user
+  console.log('\x1b[33m[!] Note: Vivo security may require manually tapping Rapido once from your home screen.\x1b[0m');
+  await speak("I have initiated the launch sequence for Rapido. If Vivo's security prevents it from opening, please tap Rapido from your home screen to grant permission, Sir.");
 }
 
 // Hardware Bridge Diagnostic Check
@@ -550,10 +591,10 @@ async function runDiagnostics() {
   const home = process.env.HOME || '/data/data/com.termux/files/home';
   const hasStorage = fs.existsSync('/sdcard/Download') || fs.existsSync(path.join(home, 'storage', 'downloads'));
   if (hasStorage) {
-    console.log('\x1b[32m[✔] Android Shared Storage: ACCESSIBLE\x1b[0m');
+    console.log(`\x1b[32m[✔] Android Shared Storage: ACCESSIBLE\x1b[0m`);
   } else {
-    console.log('\x1b[33m[!] Android Shared Storage: NOT LINKED\x1b[0m');
-    console.log('\x1b[33m    Run "termux-setup-storage" in Termux so WhatsApp can receive voice notes directly.\x1b[0m');
+    console.log(`\x1b[33m[!] Android Shared Storage: NOT LINKED\x1b[0m`);
+    console.log(`\x1b[33m    Run "termux-setup-storage" in Termux so WhatsApp can receive voice notes directly.\x1b[0m`);
   }
 }
 
@@ -587,7 +628,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 2. Rapido Ride Booking (Native Mobile App only - zero Chrome)
+  // 2. Rapido Ride Booking (Multi-candidate native launcher)
   if (isRapido(lower)) {
     await handleRapido();
     return;
@@ -736,7 +777,7 @@ async function processOrder(input) {
     const cleanApp = targetApp.replace(/[^a-z0-9]/gi, '');
     if (cleanApp.length > 2) {
       console.log(`\x1b[34m[*] Looking up installed package for "${cleanApp}"...\x1b[0m`);
-      const pmRes = await runTermux(`pm list packages | grep -i "${cleanApp}" | head -n 1`);
+      const pmRes = await runTermux(`pm list packages --user 0 2>/dev/null | grep -i "${cleanApp}" | head -n 1`);
       if (pmRes.ok && pmRes.output) {
         const pkgName = pmRes.output.replace(/^package:/, '').trim();
         if (pkgName) {
