@@ -171,6 +171,52 @@ function isBrowser(lower) {
   return lower.includes('browser') || lower.includes('chrome') || lower.includes('google');
 }
 
+function isCalling(lower) {
+  return lower.startsWith('call ') || lower.startsWith('dial ') || lower === 'call' || lower.includes('phone call') || lower.includes('make a call') || lower.includes('open dialer') || lower.includes('open phone');
+}
+
+function isRapido(lower) {
+  return lower.includes('rapido') || lower.includes('book a ride') || lower.includes('book ride') || lower.includes('book a bike') || lower.includes('book bike') || lower.includes('book cab') || lower.includes('book a cab') || lower.includes('get a ride') || lower.includes('find a ride');
+}
+
+async function handleCall(cmd, lower) {
+  // Check if phone digits exist in command
+  const digitMatch = cmd.match(/\+?\d[\d -]{6,}\d/);
+  if (digitMatch) {
+    const cleanNum = digitMatch[0].replace(/[\s-]/g, '');
+    console.log(`\x1b[32m-> Calling number: ${cleanNum}\x1b[0m`);
+    await speak(`Dialing ${cleanNum} for you, Sir.`);
+    await runTermux(`termux-telephony-call ${cleanNum} || am start -a android.intent.action.DIAL -d "tel:${cleanNum}"`);
+    return;
+  }
+
+  // Look up by contact name (e.g., "call Dad", "call Sachin")
+  const nameMatch = cmd.replace(/^(?:please\s+)?(?:call|dial|phone)\s+(?:to\s+)?/i, '').trim();
+  if (nameMatch && nameMatch.length > 1 && !nameMatch.toLowerCase().includes('dialer') && !nameMatch.toLowerCase().includes('phone')) {
+    console.log(`\x1b[34m[*] Looking up contact "${nameMatch}" in address book...\x1b[0m`);
+    const cRes = await runTermux('termux-contact-list');
+    if (cRes.ok && cRes.output) {
+      try {
+        const contacts = JSON.parse(cRes.output);
+        const found = contacts.find(c => c.name && c.name.toLowerCase().includes(nameMatch.toLowerCase()));
+        if (found && found.number) {
+          console.log(`\x1b[32m-> Found contact: ${found.name} (${found.number})\x1b[0m`);
+          await speak(`Calling ${found.name} at ${found.number}, Sir.`);
+          await runTermux(`termux-telephony-call ${found.number} || am start -a android.intent.action.DIAL -d "tel:${found.number}"`);
+          return;
+        }
+      } catch (e) {}
+    }
+    await speak(`I could not find ${nameMatch} in your contacts, Sir. Opening the dialer.`);
+    await runTermux('am start -a android.intent.action.DIAL');
+    return;
+  }
+
+  // Generic dialer
+  await speak("Opening phone dialer, Sir.");
+  await runTermux('am start -a android.intent.action.DIAL');
+}
+
 // Hardware Bridge Diagnostic Check
 async function runDiagnostics() {
   console.log('\x1b[34m[*] Running Stark Hardware Bridge Diagnostics...\x1b[0m');
@@ -320,7 +366,65 @@ async function processOrder(input) {
     return;
   }
 
-  // 11. Exit / Stand Down
+  // 11. Phone Call & Dialer
+  if (isCalling(lower)) {
+    await handleCall(cmd, lower);
+    return;
+  }
+
+  // 12. Rapido Ride Booking
+  if (isRapido(lower)) {
+    console.log('\x1b[32m-> Launching Rapido to book ride\x1b[0m');
+    await speak("Opening Rapido to book your ride right away, Sir.");
+    await runTermux('monkey -p com.rapido.passenger -c android.intent.category.LAUNCHER 1 || am start -a android.intent.action.VIEW -d "https://rapido.bike" com.rapido.passenger');
+    return;
+  }
+
+  // 13. Telegram
+  if (lower.includes('telegram')) {
+    console.log('\x1b[32m-> Launching Telegram\x1b[0m');
+    await speak("Opening Telegram, Sir.");
+    await runTermux('monkey -p org.telegram.messenger -c android.intent.category.LAUNCHER 1');
+    return;
+  }
+
+  // 14. Snapchat
+  if (lower.includes('snapchat')) {
+    console.log('\x1b[32m-> Launching Snapchat\x1b[0m');
+    await speak("Opening Snapchat, Sir.");
+    await runTermux('monkey -p com.snapchat.android -c android.intent.category.LAUNCHER 1');
+    return;
+  }
+
+  // 15. Truecaller
+  if (lower.includes('truecaller')) {
+    console.log('\x1b[32m-> Launching Truecaller\x1b[0m');
+    await speak("Opening Truecaller, Sir.");
+    await runTermux('monkey -p com.truecaller -c android.intent.category.LAUNCHER 1');
+    return;
+  }
+
+  // 16. Dynamic App Launcher for any other app ("open [app name]")
+  const openMatch = lower.match(/^(?:open|launch|start)\s+(?:the\s+)?([a-z0-9_ -]+)/i);
+  if (openMatch) {
+    const targetApp = openMatch[1].trim().toLowerCase();
+    const cleanApp = targetApp.replace(/[^a-z0-9]/gi, '');
+    if (cleanApp.length > 2) {
+      console.log(`\x1b[34m[*] Looking up installed package for "${cleanApp}"...\x1b[0m`);
+      const pmRes = await runTermux(`pm list packages | grep -i "${cleanApp}" | head -n 1`);
+      if (pmRes.ok && pmRes.output) {
+        const pkgName = pmRes.output.replace(/^package:/, '').trim();
+        if (pkgName) {
+          console.log(`\x1b[32m-> Found and launching: ${pkgName}\x1b[0m`);
+          await speak(`Opening ${targetApp}, Sir.`);
+          await runTermux(`monkey -p ${pkgName} -c android.intent.category.LAUNCHER 1`);
+          return;
+        }
+      }
+    }
+  }
+
+  // 17. Exit / Stand Down
   if (isExit(lower)) {
     await speak("Standing down, Sir. Have a splendid day.");
     process.exit(0);
