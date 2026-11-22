@@ -6,6 +6,7 @@
  * ==============================================================================
  * Designed specifically for Sachin Lolariya's Android device:
  * - NO runaway loops: Ignores ERROR_NO_MATCH, timeouts, and silent inputs.
+ * - Hardware Bridge Self-Check: Verifies Termux:API connection on boot.
  * - Wake Word & Push-to-Talk: Tap ENTER to speak, or say "Jarvis" to wake.
  * - Robust hardware parser: Matches "flight light", "turn on flashlight", "torch on", etc.
  * - Speaks in British Butler accent (en-GB, pitch 0.95, rate 1.05) through phone speaker.
@@ -28,9 +29,16 @@ console.log('\x1b[36m%s\x1b[0m', '==============================================
 
 function runTermux(cmd) {
   return new Promise((resolve) => {
-    exec(cmd, (err, stdout, stderr) => {
-      if (err) resolve({ ok: false, error: err.message, stderr });
-      else resolve({ ok: true, output: (stdout || '').trim() });
+    exec(cmd, { timeout: 6000 }, (err, stdout, stderr) => {
+      const out = (stdout || '').trim();
+      const errOut = (stderr || '').trim();
+      if (err) {
+        resolve({ ok: false, error: err.message, stderr: errOut, output: out });
+      } else if (errOut.length > 0 && out.length === 0) {
+        resolve({ ok: false, error: errOut, stderr: errOut, output: out });
+      } else {
+        resolve({ ok: true, output: out, stderr: errOut });
+      }
     });
   });
 }
@@ -139,6 +147,25 @@ function isExit(lower) {
   return lower === 'exit' || lower === 'quit' || lower === 'bye' || lower === 'goodbye' || lower.includes('stand down') || lower.includes('go to sleep');
 }
 
+// Hardware Bridge Diagnostic Check
+async function runDiagnostics() {
+  console.log('\x1b[34m[*] Running Stark Hardware Bridge Diagnostics...\x1b[0m');
+  const bRes = await runTermux('termux-battery-status');
+  if (bRes.ok && bRes.output && bRes.output.includes('percentage')) {
+    try {
+      const b = JSON.parse(bRes.output);
+      console.log(`\x1b[32m[✔] Termux:API Bridge: ONLINE (Battery: ${b.percentage}%, Status: ${b.status})\x1b[0m`);
+      return true;
+    } catch (e) {}
+  }
+  console.log('\x1b[31m[✖] Termux:API Bridge: OFFLINE or BLOCKED\x1b[0m');
+  console.log('\x1b[33m    Troubleshoot Checklist:\x1b[0m');
+  console.log('\x1b[33m    1. Open the "Termux:API" app from home screen once.\x1b[0m');
+  console.log('\x1b[33m    2. Settings > Apps > Termux:API > Permissions > Camera: Allow.\x1b[0m');
+  console.log('\x1b[33m    3. Ensure Termux and Termux:API are both from F-Droid (not Play Store).\x1b[0m');
+  return false;
+}
+
 // Process voice or text order
 async function processOrder(input) {
   if (!input) return;
@@ -151,9 +178,15 @@ async function processOrder(input) {
   // If user only said "Jarvis"
   if (!cmd || cmd.length === 0) {
     await speak("At your service, Sir. What can I do for you?");
-    // Immediately listen for follow-up instruction
     const followUp = await listen();
     if (followUp) await processOrder(followUp);
+    return;
+  }
+
+  // Diagnostics command
+  if (lower === 'test' || lower === 'diag' || lower === 'diagnostics' || lower === 'check') {
+    await runDiagnostics();
+    await speak("Diagnostics complete, Sir.");
     return;
   }
 
@@ -161,11 +194,14 @@ async function processOrder(input) {
   if (isFlashlightOn(lower)) {
     console.log('\x1b[32m-> Executing: termux-torch on\x1b[0m');
     const res = await runTermux('termux-torch on');
+    if (res.output) console.log('\x1b[90m[torch out]:', res.output, '\x1b[0m');
+    if (res.stderr) console.log('\x1b[31m[torch err]:', res.stderr, '\x1b[0m');
+
     if (res.ok) {
       await speak("Flashlight activated, Sir.");
     } else {
       console.log('Torch error:', res.error);
-      await speak("Unable to turn on the flashlight. Please check Camera permission in Settings for Termux API.");
+      await speak("Unable to turn on the flashlight. Please ensure Camera permission is granted to Termux:API in Android Settings.");
     }
     return;
   }
@@ -173,7 +209,9 @@ async function processOrder(input) {
   // 2. Flashlight OFF
   if (isFlashlightOff(lower)) {
     console.log('\x1b[32m-> Executing: termux-torch off\x1b[0m');
-    await runTermux('termux-torch off');
+    const res = await runTermux('termux-torch off');
+    if (res.output) console.log('\x1b[90m[torch out]:', res.output, '\x1b[0m');
+    if (res.stderr) console.log('\x1b[31m[torch err]:', res.stderr, '\x1b[0m');
     await speak("Flashlight deactivated, Sir.");
     return;
   }
@@ -190,7 +228,7 @@ async function processOrder(input) {
   if (isBattery(lower)) {
     console.log('\x1b[32m-> Querying: termux-battery-status\x1b[0m');
     const bRes = await runTermux('termux-battery-status');
-    if (bRes.ok) {
+    if (bRes.ok && bRes.output) {
       try {
         const b = JSON.parse(bRes.output);
         await speak(`Your battery is at ${b.percentage} percent, and is currently ${b.status.toLowerCase()}.`);
@@ -198,7 +236,8 @@ async function processOrder(input) {
         await speak("Battery checked, Sir.");
       }
     } else {
-      await speak("Telemetry data unavailable at the moment, Sir.");
+      console.log('Battery error:', bRes.error, bRes.stderr);
+      await speak("Telemetry data unavailable. Termux:API bridge may need to be opened on your device.");
     }
     return;
   }
@@ -221,6 +260,7 @@ const rl = readline.createInterface({
 });
 
 async function main() {
+  await runDiagnostics();
   await speak("J.A.R.V.I.S. voice controller initialized, Sachin.");
   promptUser();
 }
