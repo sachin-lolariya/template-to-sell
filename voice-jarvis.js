@@ -5,12 +5,14 @@
  * STARK INDUSTRIES // J.A.R.V.I.S. SMART VOICE CONTROLLER (ANDROID)
  * ==============================================================================
  * Designed specifically for Sachin Lolariya's Android device:
- * - NO runaway loops: Ignores ERROR_NO_MATCH, timeouts, and silent inputs.
+ * - 100% FREE WhatsApp Voice Note Agent: Generates British Butler audio (.mp3)
+ *   and dispatches directly via WhatsApp ("Voice note to Gopi: [Message]").
+ * - Push-to-Talk via [ENTER] key: Zero infinite loops, filters silence & noise.
  * - Hardware Bridge Self-Check: Verifies Termux:API connection on boot.
- * - Wake Word & Push-to-Talk: Tap ENTER to speak, or say "Jarvis" to wake.
- * - Robust hardware parser: Matches "flight light", "turn on flashlight", "torch on", etc.
+ * - Hardware Control: Flashlight ON / OFF, Battery telemetry, Haptics.
+ * - App Launchers: Camera, Gallery, YouTube, WhatsApp, Settings, Browser, Rapido, etc.
  * - Speaks in British Butler accent (en-GB, pitch 0.95, rate 1.05) through phone speaker.
- * - Direct Hardware: Flashlight, Battery, Haptics, Volume.
+ * - AI Butler Brain: Gemini 3.5 Flash-Lite.
  * ==============================================================================
  */
 
@@ -20,37 +22,17 @@ const path = require('path');
 const { exec } = require('child_process');
 const readline = require('readline');
 
-const CONFIG_PATH = path.join(process.env.HOME || '.', '.jarvis-config.json');
-
-function loadConfig() {
-  try {
-    if (fs.existsSync(CONFIG_PATH)) {
-      return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-    }
-  } catch (e) {}
-  return {};
-}
-
-function saveConfig(updates) {
-  try {
-    const existing = loadConfig();
-    const merged = { ...existing, ...updates };
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(merged, null, 2), 'utf8');
-  } catch (e) {}
-}
-
-const DEFAULT_BLAND_KEY = ['org_e10f7136ecb16df9a5455a776ee2690dcf', 'c65140d1522acf9b2018a8eaffc37c66eed69508cdde8e6c4c69'].join('');
-const config = loadConfig();
-let BLAND_API_KEY = config.bland_api_key || process.env.BLAND_API_KEY || DEFAULT_BLAND_KEY;
-
 // Secure token assembly to comply with GitHub push protection
 const GEMINI_API_KEY = ['AQ.', 'Ab8RN6K0Y96IdjLu', 'IJJxPq9vCHsJz6WQdYN9elJWFh-VGfjbTg'].join('');
 
 console.clear();
 console.log('\x1b[36m%s\x1b[0m', '=======================================================');
 console.log('\x1b[1m\x1b[33m%s\x1b[0m', '   STARK INDUSTRIES // J.A.R.V.I.S. VOICE ASSISTANT    ');
-console.log('\x1b[36m%s\x1b[0m', '   On-Device Hardware Control & British Butler Audio   ');
+console.log('\x1b[36m%s\x1b[0m', '   On-Device Hardware & WhatsApp Voice Note Agent      ');
 console.log('\x1b[36m%s\x1b[0m', '=======================================================');
+console.log('\x1b[90m%s\x1b[0m', 'Voice Note Syntax: "Voice note to Gopi: What is your favourite thing?"');
+console.log('\x1b[90m%s\x1b[0m', 'Hardware Commands: "Turn on flashlight" | "Open camera" | "Battery"');
+console.log('\x1b[36m%s\x1b[0m', '-------------------------------------------------------');
 
 function runTermux(cmd) {
   return new Promise((resolve) => {
@@ -108,7 +90,7 @@ function callGemini(userInput) {
   return new Promise((resolve) => {
     const prompt = `You are JARVIS, Tony Stark's AI butler, running directly on Sachin Lolariya's Android phone.
 Sachin says: "${userInput}".
-You have real hardware control over his phone (flashlight/torch, haptics, battery, speaker).
+You have real hardware control over his phone (flashlight/torch, haptics, battery, speaker, WhatsApp voice notes).
 Answer concisely in 1-2 spoken sentences in polite, sharp British butler persona (use 'Sir' or 'Sachin').
 Do NOT include markdown, bullets, asterisks, or quotes since this will be spoken out loud.`;
 
@@ -196,191 +178,15 @@ function isBrowser(lower) {
   return lower.includes('browser') || lower.includes('chrome') || lower.includes('google');
 }
 
-function isCalling(lower) {
-  return lower.startsWith('call ') || lower.startsWith('dial ') || lower === 'call' || lower.includes('phone call') || lower.includes('make a call') || lower.includes('open dialer') || lower.includes('open phone');
-}
-
 function isRapido(lower) {
   return lower.includes('rapido') || lower.includes('book a ride') || lower.includes('book ride') || lower.includes('book a bike') || lower.includes('book bike') || lower.includes('book cab') || lower.includes('book a cab') || lower.includes('get a ride') || lower.includes('find a ride');
 }
 
-function triggerAiCall(phoneNumber, task, recipientName) {
-  return new Promise((resolve) => {
-    if (!BLAND_API_KEY) {
-      resolve({
-        ok: false,
-        error: "NO_KEY",
-        message: "To make autonomous AI phone calls, Sir, we need a Bland.ai API key. Sign up free at bland.ai, then type: 'key YOUR_KEY'."
-      });
-      return;
-    }
-
-    let clean = phoneNumber.replace(/[^0-9+]/g, '');
-    if (clean.length === 10) clean = '+91' + clean;
-    else if (!clean.startsWith('+')) clean = '+' + clean;
-
-    const payload = JSON.stringify({
-      phone_number: clean,
-      task: `Deliver this message directly and naturally: "${task}". Do NOT introduce yourself as J.A.R.V.I.S., and do NOT say "calling on behalf of Sachin". Just speak directly, politely, and clearly what was asked to say. Listen attentively to their response, answer naturally, and conclude the call smoothly.`,
-      voice: "tanner-british",
-      wait_for_greeting: true,
-      record: true
-    });
-
-    const req = https.request({
-      hostname: 'api.bland.ai',
-      path: '/v1/calls',
-      method: 'POST',
-      headers: {
-        'Authorization': BLAND_API_KEY,
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload)
-      }
-    }, (res) => {
-      let d = ''; res.on('data', c => d += c);
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(d);
-          if (json.status === 'success' || json.call_id) {
-            resolve({ ok: true, callId: json.call_id });
-          } else {
-            resolve({ ok: false, error: json.message || json.error || 'Failed to dispatch call' });
-          }
-        } catch (e) {
-          resolve({ ok: false, error: 'Invalid response from telecom server' });
-        }
-      });
-    });
-    req.on('error', (e) => resolve({ ok: false, error: e.message }));
-    req.write(payload);
-    req.end();
-  });
+function isCallingAttempt(lower) {
+  return lower.startsWith('call ') || lower.startsWith('dial ') || lower === 'call' || lower.includes('phone call') || lower.includes('make a call') || lower.includes('open dialer');
 }
 
-function waitForPickupAndSpeak(spokenText) {
-  return new Promise((resolve) => {
-    let spoken = false;
-
-    console.log('\n\x1b[1m\x1b[32m===============================================================\x1b[0m');
-    console.log('\x1b[1m\x1b[33m👉 TAP [ENTER] AS SOON AS THEY PICK UP THE CALL! 👈\x1b[0m');
-    console.log('\x1b[36m   JARVIS will immediately speak aloud into the speakerphone.\x1b[0m');
-    console.log('\x1b[90m   (Or JARVIS will automatically speak in 18 seconds if you do nothing)\x1b[0m');
-    console.log('\x1b[1m\x1b[32m===============================================================\x1b[0m\n');
-
-    const autoTimer = setTimeout(async () => {
-      if (!spoken) {
-        spoken = true;
-        console.log('\x1b[33m[*] 18s timer reached: Speaking message now...\x1b[0m');
-        await speak(spokenText);
-        resolve();
-      }
-    }, 18000);
-
-    const onData = async () => {
-      if (!spoken) {
-        spoken = true;
-        clearTimeout(autoTimer);
-        process.stdin.removeListener('data', onData);
-        console.log('\x1b[32m[*] Pick-up confirmed by you! Speaking message now...\x1b[0m');
-        await speak(spokenText);
-        resolve();
-      }
-    };
-
-    process.stdin.once('data', onData);
-  });
-}
-
-async function handleCall(cmd, lower) {
-  // Check if this is an Autonomous AI Conversation Call (e.g., "call Rahul and tell him...", "call Mom and ask...")
-  const aiMatch = cmd.match(/^(?:please\s+)?(?:call|dial|phone|ai\s+call)\s+(.+?)\s+(?:and\s+tell|and\s+ask|and\s+say|to\s+tell|to\s+ask)\s+(.+)$/i);
-  if (aiMatch) {
-    const target = aiMatch[1].trim();
-    const task = aiMatch[2].trim();
-    console.log(`\x1b[35m[*] Autonomous AI Call Requested -> Target: "${target}", Task: "${task}"\x1b[0m`);
-
-    // Resolve phone number for target
-    let resolvedNumber = null;
-    const digitMatch = target.match(/\+?\d[\d -]{6,}\d/);
-    if (digitMatch) {
-      resolvedNumber = digitMatch[0].replace(/[\s-]/g, '');
-    } else {
-      const cRes = await runTermux('termux-contact-list');
-      if (cRes.ok && cRes.output) {
-        try {
-          const contacts = JSON.parse(cRes.output);
-          const found = contacts.find(c => c.name && c.name.toLowerCase().includes(target.toLowerCase()));
-          if (found && found.number) resolvedNumber = found.number;
-        } catch (e) {}
-      }
-    }
-
-    if (!resolvedNumber) {
-      await speak(`I could not find a phone number for ${target} in your contacts, Sir.`);
-      return;
-    }
-
-    await speak(`Engaging autonomous calling protocol. Calling ${target} to ${task}, Sir.`);
-    const callRes = await triggerAiCall(resolvedNumber, task, target);
-    if (callRes.ok) {
-      await speak(`Call dispatched successfully, Sir. I am speaking with ${target} now.`);
-    } else {
-      console.log('AI Call Error:', callRes.error);
-      if (callRes.error && callRes.error.toLowerCase().includes('international')) {
-        const isQuestion = lower.includes(' ask ') || lower.includes(' question ') || lower.includes(' enquire ');
-        const introVerb = isQuestion ? "ask you" : "inform you";
-        const spokenText = `Hello! This is Sachin's automated assistant speaking. Sachin asked me to ${introVerb}: ${task}. I repeat: ${task}. Thank you!`;
-
-        await speak(`Cloud telecom requires paid international credits, Sir. Engaging Speakerphone Butler mode! Dialing ${target} via your free SIM card now. Please turn on speakerphone, and tap ENTER as soon as they answer!`);
-        await runTermux(`termux-telephony-call ${resolvedNumber} || am start -a android.intent.action.DIAL -d "tel:${resolvedNumber}"`);
-
-        // Wait for user to tap ENTER or fallback to 18 seconds
-        await waitForPickupAndSpeak(spokenText);
-      } else {
-        await speak(callRes.message || `Unable to place call: ${callRes.error}`);
-      }
-    }
-    return;
-  }
-
-  // Check if phone digits exist in command for regular call
-  const digitMatch = cmd.match(/\+?\d[\d -]{6,}\d/);
-  if (digitMatch) {
-    const cleanNum = digitMatch[0].replace(/[\s-]/g, '');
-    console.log(`\x1b[32m-> Calling number: ${cleanNum}\x1b[0m`);
-    await speak(`Dialing ${cleanNum} for you, Sir.`);
-    await runTermux(`termux-telephony-call ${cleanNum} || am start -a android.intent.action.DIAL -d "tel:${cleanNum}"`);
-    return;
-  }
-
-  // Look up by contact name (e.g., "call Dad", "call Sachin")
-  const nameMatch = cmd.replace(/^(?:please\s+)?(?:call|dial|phone)\s+(?:to\s+)?/i, '').trim();
-  if (nameMatch && nameMatch.length > 1 && !nameMatch.toLowerCase().includes('dialer') && !nameMatch.toLowerCase().includes('phone')) {
-    console.log(`\x1b[34m[*] Looking up contact "${nameMatch}" in address book...\x1b[0m`);
-    const cRes = await runTermux('termux-contact-list');
-    if (cRes.ok && cRes.output) {
-      try {
-        const contacts = JSON.parse(cRes.output);
-        const found = contacts.find(c => c.name && c.name.toLowerCase().includes(nameMatch.toLowerCase()));
-        if (found && found.number) {
-          console.log(`\x1b[32m-> Found contact: ${found.name} (${found.number})\x1b[0m`);
-          await speak(`Calling ${found.name} at ${found.number}, Sir.`);
-          await runTermux(`termux-telephony-call ${found.number} || am start -a android.intent.action.DIAL -d "tel:${found.number}"`);
-          return;
-        }
-      } catch (e) {}
-    }
-    await speak(`I could not find ${nameMatch} in your contacts, Sir. Opening the dialer.`);
-    await runTermux('am start -a android.intent.action.DIAL');
-    return;
-  }
-
-  // Generic dialer
-  await speak("Opening phone dialer, Sir.");
-  await runTermux('am start -a android.intent.action.DIAL');
-}
-
-// 100% Free British Voice Note Generator
+// 100% Free British Voice Note Generator (Google TTS en-UK)
 function downloadVoiceNote(text, outputPath) {
   return new Promise((resolve) => {
     const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=en-UK&client=tw-ob`;
@@ -400,41 +206,109 @@ function downloadVoiceNote(text, outputPath) {
   });
 }
 
-async function handleVoiceNote(cmd, lower) {
-  const match = cmd.match(/^(?:please\s+)?(?:send\s+)?(?:voice\s+note|voice\s+message)\s+(?:to\s+)?(.+?)(?:\s*(?:saying|that|:|message)\s*|\s+)(.+)$/i);
-  if (match) {
-    const target = match[1].trim();
-    const message = match[2].trim();
-    console.log(`\x1b[32m-> Voice Note requested for "${target}": "${message}"\x1b[0m`);
+// Smart Voice Note Parser: Handles typed input with ":" as well as spoken voice without ":"
+function parseVoiceNoteCommand(input, contacts = []) {
+  let clean = input.replace(/^(?:hey\s+)?jarvis[:,]?\s*/i, '').trim();
+  clean = clean.replace(/^(?:please\s+)?(?:send\s+)?(?:a\s+)?(?:voice\s+note|voice\s+message|audio\s+note)\s+(?:to\s+)?/i, '').trim();
 
+  // Pattern 1: Colon separator (e.g. "Gopi: What is your favourite thing?")
+  const colonIdx = clean.indexOf(':');
+  if (colonIdx !== -1) {
+    const target = clean.substring(0, colonIdx).trim();
+    const message = clean.substring(colonIdx + 1).trim();
+    if (target && message) return { target, message };
+  }
+
+  // Pattern 2: Keyword separators: saying, that, and tell, and ask, to tell, to ask, message
+  const kwMatch = clean.match(/^(.+?)\s+(?:saying|that|and\s+tell(?:\s+her|\s+him|\s+them)?|and\s+ask(?:\s+her|\s+him|\s+them)?|to\s+tell(?:\s+her|\s+him|\s+them)?|to\s+ask(?:\s+her|\s+him|\s+them)?|message)\s+(.+)$/i);
+  if (kwMatch) {
+    return { target: kwMatch[1].trim(), message: kwMatch[2].trim() };
+  }
+
+  // Pattern 3: Match against known contact names if available
+  if (contacts && contacts.length > 0) {
+    const sortedContacts = [...contacts].sort((a, b) => (b.name || '').length - (a.name || '').length);
+    for (const c of sortedContacts) {
+      if (c.name && clean.toLowerCase().startsWith(c.name.toLowerCase())) {
+        const msg = clean.substring(c.name.length).trim().replace(/^[:,-]\s*/, '');
+        if (msg) return { target: c.name, message: msg };
+      }
+    }
+  }
+
+  // Pattern 4: First word is contact name, rest is message
+  const spaceIdx = clean.indexOf(' ');
+  if (spaceIdx !== -1) {
+    return {
+      target: clean.substring(0, spaceIdx).trim(),
+      message: clean.substring(spaceIdx + 1).trim()
+    };
+  }
+
+  return null;
+}
+
+// WhatsApp Voice Note Handler (100% Free, Zero Waiting, Zero Ringing)
+async function handleVoiceNote(cmd, lower) {
+  // Try to load contacts to assist parser if available
+  let contacts = [];
+  try {
+    const cRes = await runTermux('termux-contact-list');
+    if (cRes.ok && cRes.output) {
+      contacts = JSON.parse(cRes.output);
+    }
+  } catch (e) {}
+
+  const parsed = parseVoiceNoteCommand(cmd, contacts);
+
+  if (parsed && parsed.target && parsed.message) {
+    const target = parsed.target;
+    const message = parsed.message;
+    console.log(`\x1b[32m-> WhatsApp Voice Note requested for: "${target}"\x1b[0m`);
+    console.log(`\x1b[32m-> Message content: "${message}"\x1b[0m`);
+
+    // Voice text spoken by JARVIS in the audio file
     const voiceText = `Hello ${target}, Sachin asked me to inform you: ${message}`;
+    
+    // Primary path in $HOME, secondary fallback in Downloads
     const outputPath = path.join(process.env.HOME || '.', 'jarvis_voice_note.mp3');
 
-    console.log('\x1b[34m[*] Synthesizing British Butler Voice Note...\x1b[0m');
-    await speak("Synthesizing your British voice note right now, Sir.");
+    console.log('\x1b[34m[*] Synthesizing British Butler Voice Note audio (.mp3)...\x1b[0m');
+    await speak(`Synthesizing your British voice note for ${target} right now, Sir.`);
+
     const ok = await downloadVoiceNote(voiceText, outputPath);
 
     if (ok) {
-      console.log(`\x1b[32m[✔] Voice note generated at ${outputPath}\x1b[0m`);
+      // Also try to mirror to /sdcard/Download if storage access exists
+      try {
+        const sdcardPath = '/sdcard/Download/jarvis_voice_note.mp3';
+        fs.copyFileSync(outputPath, sdcardPath);
+      } catch (e) {}
+
+      console.log(`\x1b[32m[✔] Audio generated successfully: "${voiceText}"\x1b[0m`);
+      console.log(`\x1b[36m[*] Opening WhatsApp share sheet...\x1b[0m`);
+      
       await speak(`Voice note generated. Select ${target} on WhatsApp to dispatch it, Sir.`);
+      
+      // Dispatch via termux-open with Android content provider
       await runTermux(`termux-open --send "${outputPath}"`);
       return;
     } else {
-      await speak("Unable to generate audio file at the moment, Sir.");
+      await speak("Unable to generate the voice note audio file at the moment, Sir.");
       return;
     }
   }
 
-  await speak("Please specify the recipient and message, Sir. For example: Voice note to Mummy: I will reach soon.");
+  await speak("Please specify the recipient and message, Sir. For example: Voice note to Gopi: What is your favourite thing?");
 }
 
-// 100% Free WhatsApp Smart Messenger
+// 100% Free WhatsApp Direct Text Messenger
 async function handleWhatsAppMessage(cmd, lower) {
   const match = cmd.match(/^(?:please\s+)?(?:send\s+)?whatsapp\s+(?:to\s+)?(.+?)(?:\s*(?:saying|that|:|message)\s*|\s+)(.+)$/i);
   if (match) {
     const target = match[1].trim();
     const message = match[2].trim();
-    console.log(`\x1b[32m-> WhatsApp message requested for "${target}": "${message}"\x1b[0m`);
+    console.log(`\x1b[32m-> WhatsApp text message requested for "${target}": "${message}"\x1b[0m`);
 
     let phone = null;
     const digitMatch = target.match(/\+?\d[\d -]{6,}\d/);
@@ -523,7 +397,7 @@ async function runDiagnostics() {
   console.log('\x1b[33m    Troubleshoot Checklist:\x1b[0m');
   console.log('\x1b[33m    1. Open the "Termux:API" app from home screen once.\x1b[0m');
   console.log('\x1b[33m    2. Settings > Apps > Termux:API > Permissions > Camera: Allow.\x1b[0m');
-  console.log('\x1b[33m    3. Ensure Termux and Termux:API are both from F-Droid (not Play Store).\x1b[0m');
+  console.log('\x1b[33m    3. Ensure Termux and Termux:API are both from F-Droid.\x1b[0m');
   return false;
 }
 
@@ -551,41 +425,29 @@ async function processOrder(input) {
     return;
   }
 
-  // Set Bland.ai API Key command
-  if (lower.startsWith('key ') || lower.startsWith('bland ') || lower.startsWith('set key ')) {
-    const newKey = cmd.replace(/^(?:set\s+)?(?:key|bland)\s+/i, '').trim();
-    if (newKey) {
-      saveConfig({ bland_api_key: newKey });
-      BLAND_API_KEY = newKey;
-      console.log('\x1b[32m[✔] Bland.ai API Key saved successfully!\x1b[0m');
-      await speak("Bland API key saved, Sir. Autonomous calling is now active.");
-      return;
-    }
+  // 1. WhatsApp Voice Note Generator (Priority 1: Zero waiting, zero ringing voice note)
+  if (lower.includes('voice note') || lower.includes('voice message') || lower.includes('audio note')) {
+    await handleVoiceNote(cmd, lower);
+    return;
   }
 
-  // 1. Flashlight ON
+  // 2. Flashlight ON
   if (isFlashlightOn(lower)) {
     console.log('\x1b[32m-> Executing: termux-torch on\x1b[0m');
     const res = await runTermux('termux-torch on');
     if (res.output) console.log('\x1b[90m[torch out]:', res.output, '\x1b[0m');
     if (res.stderr) console.log('\x1b[31m[torch err]:', res.stderr, '\x1b[0m');
 
-    if (res.output && (res.output.includes('Google Play') || res.output.includes('not yet available'))) {
-      console.log('\x1b[31m[!] Google Play Termux detected: Hardware API is blocked by Google Play policy.\x1b[0m');
-      await speak("Your Termux is from Google Play Store which blocks hardware control. Please reinstall Termux from F-Droid, Sir.");
-      return;
-    }
-
     if (res.ok && (!res.output || res.output.length === 0)) {
       await speak("Flashlight activated, Sir.");
     } else {
       console.log('Torch error:', res.error);
-      await speak("Unable to turn on the flashlight. Please ensure Camera permission is granted to Termux:API in Android Settings.");
+      await speak("Unable to turn on the flashlight. Please check Camera permission for Termux:API in Android Settings.");
     }
     return;
   }
 
-  // 2. Flashlight OFF
+  // 3. Flashlight OFF
   if (isFlashlightOff(lower)) {
     console.log('\x1b[32m-> Executing: termux-torch off\x1b[0m');
     const res = await runTermux('termux-torch off');
@@ -595,7 +457,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 3. Haptic Feedback
+  // 4. Haptic Feedback
   if (isVibrate(lower)) {
     console.log('\x1b[32m-> Executing: termux-vibrate -d 600\x1b[0m');
     await runTermux('termux-vibrate -d 600');
@@ -603,7 +465,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 4. Battery Telemetry
+  // 5. Battery Telemetry
   if (isBattery(lower)) {
     console.log('\x1b[32m-> Querying: termux-battery-status\x1b[0m');
     const bRes = await runTermux('termux-battery-status');
@@ -621,7 +483,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 5. Open Camera App
+  // 6. Open Camera App
   if (isCamera(lower)) {
     console.log('\x1b[32m-> Launching Android Camera App\x1b[0m');
     await speak("Opening the camera right away, Sir.");
@@ -629,7 +491,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 6. Open Gallery / Photos App
+  // 7. Open Gallery / Photos App
   if (isGallery(lower)) {
     console.log('\x1b[32m-> Launching Android Gallery / Photos App\x1b[0m');
     await speak("Opening your gallery, Sachin.");
@@ -637,7 +499,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 7. Open YouTube
+  // 8. Open YouTube
   if (isYouTube(lower)) {
     console.log('\x1b[32m-> Launching YouTube\x1b[0m');
     await speak("Launching YouTube, Sir.");
@@ -645,25 +507,19 @@ async function processOrder(input) {
     return;
   }
 
-  // 8. Voice Note generator (WhatsApp Voice Agent)
-  if (lower.includes('voice note') || lower.includes('voice message')) {
-    await handleVoiceNote(cmd, lower);
-    return;
-  }
-
-  // 8b. WhatsApp (Open or Send Message)
+  // 9. WhatsApp (Open or Send Direct Message)
   if (isWhatsApp(lower)) {
     await handleWhatsAppMessage(cmd, lower);
     return;
   }
 
-  // 8c. Free SIM SMS
+  // 10. Free SIM SMS
   if (lower.startsWith('sms ') || lower.startsWith('send sms') || lower.startsWith('send text') || lower.startsWith('text ') || lower.includes('send a message')) {
     await handleSms(cmd, lower);
     return;
   }
 
-  // 9. Open Settings
+  // 11. Open Settings
   if (isSettings(lower)) {
     console.log('\x1b[32m-> Opening Settings\x1b[0m');
     await speak("Opening device settings, Sir.");
@@ -671,7 +527,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 10. Open Browser
+  // 12. Open Browser
   if (isBrowser(lower)) {
     console.log('\x1b[32m-> Opening Browser\x1b[0m');
     await speak("Opening your browser, Sir.");
@@ -679,13 +535,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 11. Phone Call & Dialer
-  if (isCalling(lower)) {
-    await handleCall(cmd, lower);
-    return;
-  }
-
-  // 12. Rapido Ride Booking
+  // 13. Rapido Ride Booking
   if (isRapido(lower)) {
     console.log('\x1b[32m-> Launching Rapido to book ride\x1b[0m');
     await speak("Opening Rapido to book your ride right away, Sir.");
@@ -693,7 +543,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 13. Telegram
+  // 14. Telegram
   if (lower.includes('telegram')) {
     console.log('\x1b[32m-> Launching Telegram\x1b[0m');
     await speak("Opening Telegram, Sir.");
@@ -701,7 +551,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 14. Snapchat
+  // 15. Snapchat
   if (lower.includes('snapchat')) {
     console.log('\x1b[32m-> Launching Snapchat\x1b[0m');
     await speak("Opening Snapchat, Sir.");
@@ -709,7 +559,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 15. Truecaller
+  // 16. Truecaller
   if (lower.includes('truecaller')) {
     console.log('\x1b[32m-> Launching Truecaller\x1b[0m');
     await speak("Opening Truecaller, Sir.");
@@ -717,7 +567,15 @@ async function processOrder(input) {
     return;
   }
 
-  // 16. Dynamic App Launcher for any other app ("open [app name]")
+  // 17. Retired Phone Call Reminder -> Direct to Voice Note
+  if (isCallingAttempt(lower)) {
+    const targetMatch = cmd.match(/^(?:please\s+)?(?:call|dial|phone)\s+(.+?)(?:\s+(?:and|to|that).*)?$/i);
+    const target = targetMatch ? targetMatch[1].trim() : 'them';
+    await speak(`Calling has been replaced by automatic WhatsApp voice notes, Sir. Simply say: Voice note to ${target}: followed by what you would like me to say.`);
+    return;
+  }
+
+  // 18. Dynamic App Launcher for any other app ("open [app name]")
   const openMatch = lower.match(/^(?:open|launch|start)\s+(?:the\s+)?([a-z0-9_ -]+)/i);
   if (openMatch) {
     const targetApp = openMatch[1].trim().toLowerCase();
@@ -737,13 +595,13 @@ async function processOrder(input) {
     }
   }
 
-  // 17. Exit / Stand Down
+  // 19. Exit / Stand Down
   if (isExit(lower)) {
     await speak("Standing down, Sir. Have a splendid day.");
     process.exit(0);
   }
 
-  // 6. Conversational AI Butler (Gemini)
+  // 20. Conversational AI Butler (Gemini)
   const reply = await callGemini(cmd);
   await speak(reply || "At your service, Sir.");
 }
