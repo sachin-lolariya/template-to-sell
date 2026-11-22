@@ -221,9 +221,8 @@ function triggerAiCall(phoneNumber, task, recipientName) {
 
     const payload = JSON.stringify({
       phone_number: clean,
-      task: `You are J.A.R.V.I.S., Tony Stark's iconic AI butler, calling on behalf of Sachin Lolariya. Speak politely, sharply, and concisely in your British butler persona (address them courteously). Your mission: ${task}. Listen attentively to what they say, answer their questions, confirm their response, and conclude the call warmly.`,
+      task: `Deliver this message directly and naturally: "${task}". Do NOT introduce yourself as J.A.R.V.I.S., and do NOT say "calling on behalf of Sachin". Just speak directly, politely, and clearly what was asked to say. Listen attentively to their response, answer naturally, and conclude the call smoothly.`,
       voice: "tanner-british",
-      first_sentence: `Good day. I am J.A.R.V.I.S., calling on behalf of Sachin Lolariya.`,
       wait_for_greeting: true,
       record: true
     });
