@@ -5,12 +5,12 @@
  * STARK INDUSTRIES // J.A.R.V.I.S. SMART VOICE CONTROLLER (ANDROID)
  * ==============================================================================
  * Designed specifically for Sachin Lolariya's Android device:
- * - 100% FREE WhatsApp Voice Note Agent: Generates British Butler audio (.mp3)
- *   and dispatches directly via WhatsApp ("Voice note to Gopi: [Message]").
+ * - 100% FREE WhatsApp Voice Note Agent: Auto-resolves contact and opens
+ *   directly into their chat ("Voice note to Gopi: [Message]").
  * - Push-to-Talk via [ENTER] key: Zero infinite loops, filters silence & noise.
  * - Hardware Bridge Self-Check: Verifies Termux:API connection on boot.
  * - Hardware Control: Flashlight ON / OFF, Battery telemetry, Haptics.
- * - App Launchers: Camera, Gallery, YouTube, WhatsApp, Settings, Browser, Rapido, etc.
+ * - App Launchers: Rapido, Camera, Gallery, YouTube, WhatsApp, Settings, Browser, etc.
  * - Speaks in British Butler accent (en-GB, pitch 0.95, rate 1.05) through phone speaker.
  * - AI Butler Brain: Gemini 3.5 Flash-Lite.
  * ==============================================================================
@@ -31,7 +31,7 @@ console.log('\x1b[1m\x1b[33m%s\x1b[0m', '   STARK INDUSTRIES // J.A.R.V.I.S. VOI
 console.log('\x1b[36m%s\x1b[0m', '   On-Device Hardware & WhatsApp Voice Note Agent      ');
 console.log('\x1b[36m%s\x1b[0m', '=======================================================');
 console.log('\x1b[90m%s\x1b[0m', 'Voice Note Syntax: "Voice note to Gopi: What is your favourite thing?"');
-console.log('\x1b[90m%s\x1b[0m', 'Hardware Commands: "Turn on flashlight" | "Open camera" | "Battery"');
+console.log('\x1b[90m%s\x1b[0m', 'Hardware Commands: "Turn on flashlight" | "Open camera" | "Book Rapido"');
 console.log('\x1b[36m%s\x1b[0m', '-------------------------------------------------------');
 
 function runTermux(cmd) {
@@ -123,7 +123,7 @@ function callGemini(userInput) {
   return new Promise((resolve) => {
     const prompt = `You are JARVIS, Tony Stark's AI butler, running directly on Sachin Lolariya's Android phone.
 Sachin says: "${userInput}".
-You have real hardware control over his phone (flashlight/torch, haptics, battery, speaker, WhatsApp voice notes).
+You have real hardware control over his phone (flashlight/torch, haptics, battery, speaker, WhatsApp voice notes, Rapido rides).
 Answer concisely in 1-2 spoken sentences in polite, sharp British butler persona (use 'Sir' or 'Sachin').
 Do NOT include markdown, bullets, asterisks, or quotes since this will be spoken out loud.`;
 
@@ -212,11 +212,66 @@ function isBrowser(lower) {
 }
 
 function isRapido(lower) {
-  return lower.includes('rapido') || lower.includes('book a ride') || lower.includes('book ride') || lower.includes('book a bike') || lower.includes('book bike') || lower.includes('book cab') || lower.includes('book a cab') || lower.includes('get a ride') || lower.includes('find a ride');
+  return lower.includes('rapido') ||
+         lower.includes('rapdio') ||
+         lower.includes('rapedo') ||
+         lower.includes('rapid ') ||
+         lower.includes('book a ride') ||
+         lower.includes('book ride') ||
+         lower.includes('book a bike') ||
+         lower.includes('book bike') ||
+         lower.includes('book cab') ||
+         lower.includes('book a cab') ||
+         lower.includes('book auto') ||
+         lower.includes('book a auto') ||
+         lower.includes('get a ride') ||
+         lower.includes('find a ride');
 }
 
 function isCallingAttempt(lower) {
   return lower.startsWith('call ') || lower.startsWith('dial ') || lower === 'call' || lower.includes('phone call') || lower.includes('make a call') || lower.includes('open dialer');
+}
+
+// Clean phone numbers into standard Indian WhatsApp format without "+" or leading "0"
+function cleanWhatsAppNumber(raw) {
+  let digits = (raw || '').replace(/[^0-9]/g, '');
+  if (digits.startsWith('0') && digits.length === 11) {
+    digits = '91' + digits.substring(1);
+  } else if (digits.length === 10) {
+    digits = '91' + digits;
+  }
+  return digits;
+}
+
+// Find contact name & number from address book
+function findContact(target, contacts) {
+  if (!contacts || contacts.length === 0 || !target) return null;
+  const cleanTarget = target.toLowerCase().trim();
+
+  // 1. Direct digit match
+  const digitMatch = target.match(/\+?\d[\d -]{6,}\d/);
+  if (digitMatch) {
+    const num = digitMatch[0].replace(/[^0-9]/g, '');
+    return { name: target, number: num };
+  }
+
+  // 2. Exact match
+  const exact = contacts.find(c => c.name && c.name.toLowerCase().trim() === cleanTarget);
+  if (exact && exact.number) return { name: exact.name, number: exact.number };
+
+  // 3. Substring / Includes match
+  const partial = contacts.find(c => c.name && c.name.toLowerCase().includes(cleanTarget));
+  if (partial && partial.number) return { name: partial.name, number: partial.number };
+
+  // 4. Token / Word match
+  const words = cleanTarget.split(/\s+/).filter(w => w.length > 2);
+  for (const c of contacts) {
+    if (c.name && words.some(w => c.name.toLowerCase().includes(w))) {
+      return { name: c.name, number: c.number };
+    }
+  }
+
+  return null;
 }
 
 // 100% Free British Voice Note Generator (Google TTS en-UK)
@@ -281,12 +336,12 @@ function parseVoiceNoteCommand(input, contacts = []) {
   return null;
 }
 
-// WhatsApp Voice Note Handler (100% Free, Zero Waiting, Zero Ringing)
+// WhatsApp Voice Note Handler (100% Free, Auto Contact Selector)
 async function handleVoiceNote(cmd, lower) {
   // Ensure Termux external apps permission is configured
   ensureTermuxConfig();
 
-  // Try to load contacts to assist parser if available
+  // Load contacts to assist parser and resolve contact phone number
   let contacts = [];
   try {
     const cRes = await runTermux('termux-contact-list');
@@ -337,11 +392,26 @@ async function handleVoiceNote(cmd, lower) {
       }
 
       console.log(`\x1b[32m[✔] Audio generated successfully: "${voiceText}"\x1b[0m`);
-      console.log(`\x1b[36m[*] Dispatching to WhatsApp with MIME type audio/mpeg: ${sharePath}\x1b[0m`);
-      
-      await speak(`Voice note generated. Select ${target} on WhatsApp to dispatch it, Sir.`);
-      
-      // Dispatch via termux-open with explicit MIME type audio/mpeg
+
+      // Auto-resolve contact phone number to bypass contact picker
+      const contactInfo = findContact(target, contacts);
+      if (contactInfo && contactInfo.number) {
+        const cleanPhone = cleanWhatsAppNumber(contactInfo.number);
+        const jid = `${cleanPhone}@s.whatsapp.net`;
+        console.log(`\x1b[32m[✔] Auto-selected contact: ${contactInfo.name} (${cleanPhone})\x1b[0m`);
+        console.log(`\x1b[36m[*] Direct WhatsApp chat targeted: ${jid}\x1b[0m`);
+
+        await speak(`Voice note generated. Opening ${contactInfo.name}'s chat on WhatsApp for you now, Sir.`);
+
+        // Direct intent to WhatsApp contact chat with attached audio
+        const directCmd = `am start -a android.intent.action.SEND -t audio/mpeg -p com.whatsapp -e jid "${jid}" --eu android.intent.extra.STREAM "content://com.termux.files${sharePath}" --grant-read-uri-permission || am start -a android.intent.action.SEND -t audio/mpeg -p com.whatsapp -e jid "${jid}" --eu android.intent.extra.STREAM "file://${sharePath}" || termux-open --send --content-type audio/mpeg "${sharePath}"`;
+        await runTermux(directCmd);
+        return;
+      }
+
+      // Fallback if contact not in address book
+      console.log(`\x1b[33m[!] Contact "${target}" not found in address book. Opening WhatsApp chooser...\x1b[0m`);
+      await speak(`Voice note generated. Please select ${target} on WhatsApp to dispatch it, Sir.`);
       await runTermux(`termux-open --send --content-type audio/mpeg "${sharePath}"`);
       return;
     } else {
@@ -370,7 +440,7 @@ async function handleWhatsAppMessage(cmd, lower) {
       if (cRes.ok && cRes.output) {
         try {
           const contacts = JSON.parse(cRes.output);
-          const found = contacts.find(c => c.name && c.name.toLowerCase().includes(target.toLowerCase()));
+          const found = findContact(target, contacts);
           if (found && found.number) phone = found.number.replace(/[^0-9]/g, '');
         } catch (e) {}
       }
@@ -410,7 +480,7 @@ async function handleSms(cmd, lower) {
       if (cRes.ok && cRes.output) {
         try {
           const contacts = JSON.parse(cRes.output);
-          const found = contacts.find(c => c.name && c.name.toLowerCase().includes(target.toLowerCase()));
+          const found = findContact(target, contacts);
           if (found && found.number) phone = found.number;
         } catch (e) {}
       }
@@ -433,6 +503,34 @@ async function handleSms(cmd, lower) {
   await runTermux('am start -a android.intent.action.MAIN -c android.intent.category.APP_MESSAGING');
 }
 
+// Multi-Tier Rapido Ride Launcher
+async function handleRapido() {
+  console.log('\x1b[32m-> Launching Rapido to book ride\x1b[0m');
+  await speak("Opening Rapido to book your ride right away, Sir.");
+
+  // Check if Rapido package is installed
+  const pmRes = await runTermux('pm list packages | grep -i rapido | head -n 1');
+  let pkg = 'com.rapido.passenger';
+  if (pmRes.ok && pmRes.output) {
+    const foundPkg = pmRes.output.replace(/^package:/, '').trim();
+    if (foundPkg) pkg = foundPkg;
+  }
+
+  // Multi-tier launch command:
+  // 1. monkey direct
+  // 2. package resolve-activity
+  // 3. universal deep link
+  // 4. web booking portal
+  const launchCmd = `monkey -p ${pkg} 1 || am start $(cmd package resolve-activity --brief ${pkg} 2>/dev/null | tail -n 1) || am start -a android.intent.action.VIEW -d "intent://ride#Intent;scheme=rapido;package=${pkg};end;" || am start -a android.intent.action.VIEW -d "https://rapido.bike"`;
+  
+  const res = await runTermux(launchCmd);
+  if (!res.ok && res.stderr && res.stderr.includes('No activities')) {
+    console.log('\x1b[33m[*] Rapido app not found, opening Play Store...\x1b[0m');
+    await speak("Rapido does not seem to be installed. Opening the app store for you, Sir.");
+    await runTermux('am start -a android.intent.action.VIEW -d "market://details?id=com.rapido.passenger" || am start -a android.intent.action.VIEW -d "https://m.rapido.bike"');
+  }
+}
+
 // Hardware Bridge Diagnostic Check
 async function runDiagnostics() {
   console.log('\x1b[34m[*] Running Stark Hardware Bridge Diagnostics...\x1b[0m');
@@ -448,7 +546,7 @@ async function runDiagnostics() {
     console.log('\x1b[31m[✖] Termux:API Bridge: OFFLINE or BLOCKED\x1b[0m');
     console.log('\x1b[33m    Troubleshoot Checklist:\x1b[0m');
     console.log('\x1b[33m    1. Open the "Termux:API" app from home screen once.\x1b[0m');
-    console.log('\x1b[33m    2. Settings > Apps > Termux:API > Permissions > Camera: Allow.\x1b[0m');
+    console.log('\x1b[33m    2. Settings > Apps > Termux:API > Permissions > Camera & Contacts: Allow.\x1b[0m');
     console.log('\x1b[33m    3. Ensure Termux and Termux:API are both from F-Droid.\x1b[0m');
   }
 
@@ -487,13 +585,19 @@ async function processOrder(input) {
     return;
   }
 
-  // 1. WhatsApp Voice Note Generator (Priority 1: Zero waiting, zero ringing voice note)
+  // 1. WhatsApp Voice Note Generator (Priority 1: Auto Contact Selector)
   if (lower.includes('voice note') || lower.includes('voice message') || lower.includes('audio note')) {
     await handleVoiceNote(cmd, lower);
     return;
   }
 
-  // 2. Flashlight ON
+  // 2. Rapido Ride Booking (Priority 2: Before generic openers)
+  if (isRapido(lower)) {
+    await handleRapido();
+    return;
+  }
+
+  // 3. Flashlight ON
   if (isFlashlightOn(lower)) {
     console.log('\x1b[32m-> Executing: termux-torch on\x1b[0m');
     const res = await runTermux('termux-torch on');
@@ -509,7 +613,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 3. Flashlight OFF
+  // 4. Flashlight OFF
   if (isFlashlightOff(lower)) {
     console.log('\x1b[32m-> Executing: termux-torch off\x1b[0m');
     const res = await runTermux('termux-torch off');
@@ -519,7 +623,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 4. Haptic Feedback
+  // 5. Haptic Feedback
   if (isVibrate(lower)) {
     console.log('\x1b[32m-> Executing: termux-vibrate -d 600\x1b[0m');
     await runTermux('termux-vibrate -d 600');
@@ -527,7 +631,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 5. Battery Telemetry
+  // 6. Battery Telemetry
   if (isBattery(lower)) {
     console.log('\x1b[32m-> Querying: termux-battery-status\x1b[0m');
     const bRes = await runTermux('termux-battery-status');
@@ -545,7 +649,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 6. Open Camera App
+  // 7. Open Camera App
   if (isCamera(lower)) {
     console.log('\x1b[32m-> Launching Android Camera App\x1b[0m');
     await speak("Opening the camera right away, Sir.");
@@ -553,7 +657,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 7. Open Gallery / Photos App
+  // 8. Open Gallery / Photos App
   if (isGallery(lower)) {
     console.log('\x1b[32m-> Launching Android Gallery / Photos App\x1b[0m');
     await speak("Opening your gallery, Sachin.");
@@ -561,7 +665,7 @@ async function processOrder(input) {
     return;
   }
 
-  // 8. Open YouTube
+  // 9. Open YouTube
   if (isYouTube(lower)) {
     console.log('\x1b[32m-> Launching YouTube\x1b[0m');
     await speak("Launching YouTube, Sir.");
@@ -569,19 +673,19 @@ async function processOrder(input) {
     return;
   }
 
-  // 9. WhatsApp (Open or Send Direct Message)
+  // 10. WhatsApp (Open or Send Direct Message)
   if (isWhatsApp(lower)) {
     await handleWhatsAppMessage(cmd, lower);
     return;
   }
 
-  // 10. Free SIM SMS
+  // 11. Free SIM SMS
   if (lower.startsWith('sms ') || lower.startsWith('send sms') || lower.startsWith('send text') || lower.startsWith('text ') || lower.includes('send a message')) {
     await handleSms(cmd, lower);
     return;
   }
 
-  // 11. Open Settings
+  // 12. Open Settings
   if (isSettings(lower)) {
     console.log('\x1b[32m-> Opening Settings\x1b[0m');
     await speak("Opening device settings, Sir.");
@@ -589,19 +693,11 @@ async function processOrder(input) {
     return;
   }
 
-  // 12. Open Browser
+  // 13. Open Browser
   if (isBrowser(lower)) {
     console.log('\x1b[32m-> Opening Browser\x1b[0m');
     await speak("Opening your browser, Sir.");
     await runTermux('am start -a android.intent.action.VIEW -d "https://www.google.com"');
-    return;
-  }
-
-  // 13. Rapido Ride Booking
-  if (isRapido(lower)) {
-    console.log('\x1b[32m-> Launching Rapido to book ride\x1b[0m');
-    await speak("Opening Rapido to book your ride right away, Sir.");
-    await runTermux('monkey -p com.rapido.passenger -c android.intent.category.LAUNCHER 1 || am start -a android.intent.action.VIEW -d "https://rapido.bike" com.rapido.passenger');
     return;
   }
 
@@ -650,7 +746,7 @@ async function processOrder(input) {
         if (pkgName) {
           console.log(`\x1b[32m-> Found and launching: ${pkgName}\x1b[0m`);
           await speak(`Opening ${targetApp}, Sir.`);
-          await runTermux(`monkey -p ${pkgName} -c android.intent.category.LAUNCHER 1`);
+          await runTermux(`monkey -p ${pkgName} -c android.intent.category.LAUNCHER 1 || monkey -p ${pkgName} 1`);
           return;
         }
       }
