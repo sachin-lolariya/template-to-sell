@@ -542,5 +542,31 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // --------------------------------------------------------------------------
+  // 10. CASE STUDY TELEMETRY EXPANDERS
+  // --------------------------------------------------------------------------
+  const caseNotesToggles = document.querySelectorAll(".case-notes-toggle");
+  caseNotesToggles.forEach((toggle) => {
+    toggle.addEventListener("click", () => {
+      const card = toggle.closest("article");
+      const drawer = card ? card.querySelector(".case-telemetry-drawer") : null;
+      const chevron = toggle.querySelector(".chevron-icon");
+      if (drawer) {
+        const isOpen = drawer.classList.contains("open");
+        if (isOpen) {
+          drawer.classList.remove("open");
+          const label = toggle.querySelector("span");
+          if (label) label.textContent = "View Campaign Telemetry";
+          if (chevron) chevron.style.transform = "none";
+        } else {
+          drawer.classList.add("open");
+          const label = toggle.querySelector("span");
+          if (label) label.textContent = "Hide Campaign Telemetry";
+          if (chevron) chevron.style.transform = "rotate(180deg)";
+        }
+      }
+    });
+  });
+
   console.log("Aether Atelier Studio Runtime Initialized Successfully.");
 });
