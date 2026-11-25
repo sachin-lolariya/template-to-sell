@@ -98,8 +98,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const labData = {
     tiktok: {
       fashion: {
-        badge: "TikTok · Luxury Fashion Specification",
-        title: "The Atelier Unboxing & Restoration Protocol",
+        badge: "Short-Form Cinema · Haute Horlogerie",
+        title: "The Movement Assembly & Beveling Monograph",
         desc: "Focusing on raw craftsmanship textures, ASMR sound layering, and studio restoration clips that outpace traditional branded polish.",
         views: "1.8M - 2.5M",
         cadence: "5x / Week",
@@ -109,8 +109,8 @@ document.addEventListener("DOMContentLoaded", () => {
         img: "images/hero/bag.jpg"
       },
       tech: {
-        badge: "TikTok · Deep Tech & Hardware Specification",
-        title: "The Bench Test & Oscilloscope Protocol",
+        badge: "Short-Form Cinema · Spatial Architecture",
+        title: "The Monolith Material & Concrete Study",
         desc: "Raw 12-second engineering teardowns and micro-precision tests that make complex hardware immediately viral to both hobbyists and C-suite buyers.",
         views: "850k - 1.4M",
         cadence: "4x / Week",
@@ -316,36 +316,36 @@ document.addEventListener("DOMContentLoaded", () => {
   // --------------------------------------------------------------------------
   const chatThreads = {
     harriet: {
-      avatarBg: "#1E3A8A",
-      initials: "HM",
-      name: "Harriet, Mossline Atelier",
-      role: "Founder & Creative Director · with Aether Team",
+      avatarBg: "#09090B",
+      initials: "JV",
+      name: "Julian Vance, Vespera Horology",
+      role: "Founder & Master Watchmaker · Geneva",
       messages: [
-        { sender: "client", text: "my dad is now famous for darning lol 😂 He got stopped at the Leeds farmers market this morning!!", time: "10:42 AM" },
-        { sender: "aether", text: "Wait what happened?? Did the Sunday repair reel blow up?", time: "10:44 AM · Delivered" },
-        { sender: "client", text: "It hit 1.4M views on TikTok and 680k on Reels! Wholesale inquiries jumped +340% in 5 days. You guys are literal magicians. 🪄✨", time: "10:47 AM" }
+        { sender: "client", text: "The Calibre 01 monograph film just closed private allocations for the entire 2026 production run in under 72 hours.", time: "10:42 AM" },
+        { sender: "aether", text: "Outstanding news, Julian. The Swiss collector community response on LinkedIn and Vimeo exceeded our baseline models by 3.4x.", time: "10:45 AM · Delivered" },
+        { sender: "client", text: "Your architectural restraint positioned our brand alongside the premier independent manufactures of Geneva. Truly exceptional direction.", time: "10:50 AM" }
       ]
     },
     aiko: {
-      avatarBg: "#0F766E",
-      initials: "QL",
-      name: "Aiko, Quiet Labs",
-      role: "VP of Engineering · with Aether Team",
+      avatarBg: "#27272A",
+      initials: "ER",
+      name: "Elena Rostova, Kaelen Spatial",
+      role: "Design Principal · Copenhagen",
       messages: [
-        { sender: "client", text: "Kevin now has an executive fan club on LinkedIn 😂 That 12s oscilloscope debug clip just crossed 800 saves.", time: "02:15 PM" },
-        { sender: "aether", text: "Incredible! Has it translated to inbound demos yet?", time: "02:18 PM · Delivered" },
-        { sender: "client", text: "We literally booked 4 enterprise VP demos this morning alone. Siemens and ABB engineers are commenting on the thread. Total gamechanger.", time: "02:24 PM" }
+        { sender: "client", text: "We just accepted our fourth private architectural commission from the Zurich monograph release.", time: "02:15 PM" },
+        { sender: "aether", text: "The material study films in raw concrete resonated deeply with private residential patrons.", time: "02:18 PM · Delivered" },
+        { sender: "client", text: "Our project ledger is now fully committed through late 2028. The spatial clarity of your campaign was decisive.", time: "02:22 PM" }
       ]
     },
     leila: {
-      avatarBg: "#C2410C",
-      initials: "SS",
-      name: "Leila, Sunday Skin",
-      role: "Co-Founder & CEO · with Aether Team",
+      avatarBg: "#18181B",
+      initials: "ML",
+      name: "Marcus Lindqvist, Aura Sound",
+      role: "Chief of Acoustics · Berlin",
       messages: [
-        { sender: "client", text: "Shopify just crashed AGAIN. 4,000 serum units gone in under 72 hours! 🚨😭", time: "06:30 PM" },
-        { sender: "aether", text: "The raw macro texture unboxing video hit the algorithm! Checking analytics now.", time: "06:32 PM · Delivered" },
-        { sender: "client", text: "We are rushing factory production tomorrow at 7am. We need 10 more formats for the summer launch, don't let our pod sleep!", time: "06:36 PM" }
+        { sender: "client", text: "The acoustic engineering teardowns reached 850,000 verified audiophiles across Europe and North America.", time: "06:30 PM" },
+        { sender: "aether", text: "Binaural headphone engineering translated brilliantly to digital video engagement.", time: "06:32 PM · Delivered" },
+        { sender: "client", text: "Boutique wholesale orders are up 280% quarter-over-quarter. Outstanding work team.", time: "06:38 PM" }
       ]
     }
   };
