@@ -7,6 +7,12 @@
   <meta name="description" content="Aether Atelier is an ultra-premium commercial creative agency & social architecture template designed for Framer and Webflow. Engineered with GSAP 3 scroll animations, interactive content lab, and verified performance telemetry.">
   <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
 
+  <!-- Sub-resource Hints & LCP Preload -->
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="preload" as="image" href="images/hero/rooftop.jpg" fetchpriority="high">
+
   <!-- Typography: Inter, DM Mono, Magra, Instrument Serif -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -364,7 +370,7 @@
           <!-- Featured Case Study Card -->
           <div class="group relative overflow-hidden rounded-[2rem] border border-ink/10 bg-paper md:col-span-7 shadow-sm card-lift card-tilt">
             <div class="aspect-[16/10] w-full overflow-hidden bg-sand relative">
-              <img src="images/hero/rooftop.jpg" alt="Aether Atelier Campaign Direction" class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105">
+              <img src="images/hero/rooftop.jpg" alt="Aether Atelier Campaign Direction" class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" fetchpriority="high" loading="eager" decoding="async" width="800" height="500">
               
               <!-- Floating Live Campaign Badge -->
               <div class="absolute top-4 left-4 flex items-center gap-2 rounded-full glass-surface px-3 py-1 font-mono text-[10px] font-semibold text-ink shadow-sm">
@@ -1566,9 +1572,9 @@
     </div>
   </footer>
 
-  <!-- Scripts: GSAP 3 & Controller -->
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
-  <script src="js/main.js"></script>
+  <!-- Scripts: GSAP 3 & Controller (Deferred for Zero Render Blocking) -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+  <script src="js/main.js" defer></script>
 </body>
 </html>
