@@ -265,6 +265,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (cardTextEl) cardTextEl.textContent = data.text;
     if (previewImgEl) previewImgEl.src = data.img;
 
+    // Tactile Number Animation Punch
+    if (typeof gsap !== "undefined" && viewsEl && engagementEl && cadenceEl) {
+      gsap.fromTo([viewsEl, engagementEl, cadenceEl], 
+        { opacity: 0.35, y: 4, scale: 0.98 }, 
+        { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "power2.out", stagger: 0.04 }
+      );
+    }
+
     // Button states
     document.querySelectorAll(".lab-platform-btn").forEach((btn) => {
       const p = btn.getAttribute("data-platform");
@@ -567,6 +575,166 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
+
+  // --------------------------------------------------------------------------
+  // 11. FLAGSHIP CAMPAIGN AMBIENT AUDIO (WEB AUDIO API)
+  // --------------------------------------------------------------------------
+  const audioBtn = document.getElementById("flagship-audio-btn");
+  const eqBars = document.getElementById("eq-bars");
+  const audioBtnLabel = document.getElementById("audio-btn-label");
+  const audioStatusPill = document.getElementById("audio-status-pill");
+  let audioCtx = null;
+  let isPlayingAudio = false;
+  let masterGain = null;
+
+  if (audioBtn) {
+    audioBtn.addEventListener("click", () => {
+      isPlayingAudio = !isPlayingAudio;
+      audioBtn.setAttribute("aria-pressed", String(isPlayingAudio));
+
+      if (isPlayingAudio) {
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!audioCtx && AudioContextClass) {
+            audioCtx = new AudioContextClass();
+          }
+          if (audioCtx && audioCtx.state === "suspended") {
+            audioCtx.resume();
+          }
+
+          if (audioCtx) {
+            // Warm studio ambient drone (F# minor chord: 92.5Hz & 138.6Hz)
+            masterGain = audioCtx.createGain();
+            masterGain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+            masterGain.gain.exponentialRampToValueAtTime(0.035, audioCtx.currentTime + 1.2);
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = "lowpass";
+            filter.frequency.setValueAtTime(420, audioCtx.currentTime);
+
+            const osc1 = audioCtx.createOscillator();
+            osc1.type = "sine";
+            osc1.frequency.setValueAtTime(92.5, audioCtx.currentTime); // F#2
+
+            const osc2 = audioCtx.createOscillator();
+            osc2.type = "sine";
+            osc2.frequency.setValueAtTime(138.6, audioCtx.currentTime); // C#3
+
+            osc1.connect(filter);
+            osc2.connect(filter);
+            filter.connect(masterGain);
+            masterGain.connect(audioCtx.destination);
+
+            osc1.start();
+            osc2.start();
+          }
+        } catch (err) {
+          console.warn("AudioContext initialization note:", err);
+        }
+
+        if (eqBars) eqBars.classList.remove("eq-paused");
+        if (audioBtnLabel) audioBtnLabel.textContent = "Studio Sound Live";
+        if (audioStatusPill) {
+          audioStatusPill.textContent = "Live";
+          audioStatusPill.className = "rounded bg-volt/30 text-volt px-1.5 py-0.5 text-[9px] uppercase font-bold";
+        }
+      } else {
+        if (masterGain && audioCtx) {
+          masterGain.gain.setValueAtTime(masterGain.gain.value, audioCtx.currentTime);
+          masterGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
+          setTimeout(() => {
+            if (audioCtx && audioCtx.state === "running") audioCtx.suspend();
+          }, 450);
+        }
+
+        if (eqBars) eqBars.classList.add("eq-paused");
+        if (audioBtnLabel) audioBtnLabel.textContent = "Ambient Audio Preview";
+        if (audioStatusPill) {
+          audioStatusPill.textContent = "Play";
+          audioStatusPill.className = "rounded bg-white/20 px-1 text-[9px] uppercase font-bold text-white/90";
+        }
+      }
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // 12. TACTILE 3D CARD TILT & MAGNETIC CURSOR PHYSICS
+  // --------------------------------------------------------------------------
+  const isFinePointer = window.matchMedia("(pointer: fine)").matches;
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (isFinePointer && !prefersReducedMotion && typeof gsap !== "undefined") {
+    // 3D Perspective Card Tilt
+    const tiltCards = document.querySelectorAll(".card-tilt");
+    tiltCards.forEach((card) => {
+      card.addEventListener("mousemove", (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        gsap.to(card, {
+          rotationY: x * 6,
+          rotationX: -y * 6,
+          transformPerspective: 1000,
+          ease: "power1.out",
+          duration: 0.25
+        });
+      });
+
+      card.addEventListener("mouseleave", () => {
+        gsap.to(card, {
+          rotationY: 0,
+          rotationX: 0,
+          ease: "power2.out",
+          duration: 0.5
+        });
+      });
+    });
+
+    // Magnetic Cursor Physics for Primary Buttons
+    const magneticTargets = document.querySelectorAll(".magnetic-target");
+    magneticTargets.forEach((btn) => {
+      btn.addEventListener("mousemove", (e) => {
+        const rect = btn.getBoundingClientRect();
+        const deltaX = (e.clientX - rect.left - rect.width / 2) * 0.28;
+        const deltaY = (e.clientY - rect.top - rect.height / 2) * 0.28;
+        gsap.to(btn, { x: deltaX, y: deltaY, duration: 0.25, ease: "power2.out" });
+      });
+
+      btn.addEventListener("mouseleave", () => {
+        gsap.to(btn, { x: 0, y: 0, duration: 0.45, ease: "elastic.out(1, 0.4)" });
+      });
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // 13. NEWSLETTER SIGNAL FEEDBACK DELIGHT
+  // --------------------------------------------------------------------------
+  const newsletterForm = document.getElementById("newsletter-form");
+  if (newsletterForm) {
+    newsletterForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const input = newsletterForm.querySelector('input[type="email"]');
+      const submitBtn = newsletterForm.querySelector('button[type="submit"]');
+      if (input && submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "✓ Dispatched";
+        submitBtn.classList.replace("bg-ink", "bg-volt");
+        submitBtn.classList.add("text-ink");
+        input.value = "Signal locked. Check your inbox.";
+        input.disabled = true;
+
+        setTimeout(() => {
+          input.value = "";
+          input.disabled = false;
+          input.placeholder = "founder@company.com";
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Join";
+          submitBtn.classList.replace("bg-volt", "bg-ink");
+          submitBtn.classList.remove("text-ink");
+        }, 4000);
+      }
+    });
+  }
 
   console.log("Aether Atelier Studio Runtime Initialized Successfully.");
 });
