@@ -511,7 +511,7 @@ async function handleUserInput(chatId, currentRepo, userInput, isVoice = false) 
 You assist Sachin with managing his software projects, coding, repository maintenance, and general queries.
 
 Active Project Repository: "${currentRepo}"
-Known Repositories on Sachin's Account: "sachin-lolariya/template-to-sell" (Updraft Creative Studio template), "sachin-lolariya/sachin-lolariya" (Profile).
+Known Repositories on Sachin's Account: "sachin-lolariya/template-to-sell" (Aether Atelier Creative Studio template), "sachin-lolariya/sachin-lolariya" (Profile).
 Note: There is NO "avengers-doomsday-countdown" repository on Sachin's GitHub.
 
 User Input: "${userInput}"

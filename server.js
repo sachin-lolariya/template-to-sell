@@ -53,5 +53,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Updraft Template preview server running at http://localhost:${PORT}`);
+  console.log(`Aether Atelier Template preview server running at http://localhost:${PORT}`);
 });
